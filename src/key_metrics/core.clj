@@ -1,5 +1,9 @@
 (ns key-metrics.core
-  (:require [clojure.string :as str]))
+  (:require [clojure.string :as str]
+            [clojure.pprint :as pp]))
+
+(def log-path "/Users/justin/logfile.txt")
+(def hour-keys 3500)
 
 (defn get-formatter [s]
   (java.time.format.DateTimeFormatter/ofPattern s))
@@ -16,7 +20,7 @@
             (parse-date (last entry)))))
 
 (defn read-file []
-  (with-open [rdr (clojure.java.io/reader "/Users/justin/logfile.txt")]
+  (with-open [rdr (clojure.java.io/reader log-path)]
     (doall (map add-line (filter #(> (count %) 0) (line-seq rdr))))))
 
 (defn part-hour [els]
@@ -26,24 +30,23 @@
   {:hour (:hour (last (last hour-collection)))
    :count (count hour-collection)})
 
-(defn print-report [days last-hours keys-hour]
-    (println "total days: " (count days))
-    (println "keys today: " (count (last days)))
-    (println "keys historical: " (map count days))
-    (println "num hours today: " (count last-hours))
-    (println "keys/hour: " keys-hour))
+(defn get-hours-worked [day]
+  (int (/ (count day) hour-keys)))
+
+(defn print-report [days]
+  (let [obj [{:name  "total days" :value (count days)}
+             {:name  "keys today" :value (count (last days))}
+             {:name  "hours today" :value (get-hours-worked (last days))}
+             {:name  "keys this hour" :value (count (last (part-hour (last days))))}]]
+    (pp/print-table obj)))
 
 (defn get-data []
   (let [data (read-file)
-        days  (partition-by #(.getDayOfWeek (:obj (last %)))  data)
-        last-hours  (part-hour (last days))
-        keys-hour (map hourly-report last-hours)]
-    (print-report days last-hours keys-hour)
-))
+        days  (partition-by #(.getDayOfWeek (:obj (last %)))  data)]
+    (print-report days)))
 
 (defn set-interval [callback ms]
   (future (while true (do (Thread/sleep ms) (callback)))))
 
-;; (def job (set-interval get-data 60000))
-
 (get-data)
+;; (def job (set-interval get-data 60000))

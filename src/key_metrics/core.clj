@@ -47,25 +47,22 @@
    :count (count hour-collection)})
 
 (defn get-epoch-difference [a b]
-
   (- (:epoch (:time a))
      (:epoch (:time b))))
 
 (defn second-to-hours [s]
-  ;; (println "ms" ms)
-  ( / (/ s 60) 60))
+  (/ (/ s 60) 60))
 
-(defn get-clock-hours [day interval]
-  (let [t (subvec day 0)
-        key-interval interval]
-    (second-to-hours (loop [i 1 c 0]
-                       (if (= i (count t))
-                         c
-                         (let [dif  (get-epoch-difference
-                                     (nth t i)
-                                     (nth t (dec i)))
-                               added-interval (if (< dif key-interval) dif 0)]
-                           (do  (recur (inc i) (+ c added-interval)))))))))
+(defn sum-valid-keys [keys interval]
+;; accumulate the interval difference as a running total if the difference is less than the specified interval 
+  (second-to-hours (loop [i 1 c 0]
+                     (if (= i (count keys))
+                       c
+                       (let [a (nth keys i)
+                             b (nth keys (dec i))
+                             dif (get-epoch-difference a b)
+                             p (< dif interval)]
+                         (recur (inc i) (+ c (if p dif 0))))))))
 
 (defn get-key-hours [day]
   ;; get the number of work hours per day based on estimated keys per work hour
@@ -77,12 +74,11 @@
 (defn print-today-report [days]
   (let [today (vec (last days))
         part (part-hour today)
-        table [;; {:name  "total days" :value (count days)}
-               {:name  "keys " :value (str (count today) "/" keys-per-day)}
+        table [{:name  "keys " :value (str (count today) "/" keys-per-day)}
                {:name  "percent keys " :value (get-percent-for-day today)}
                {:name  "key hours " :value (get-key-hours today)}
-               {:name  "typing hours " :value (format "%.2f" (double (get-clock-hours today typing-key-interval)))}
-               {:name  "desk hours " :value (format "%.2f" (double (get-clock-hours today desk-key-interval)))}
+               {:name  "typing hours " :value (format "%.2f" (double (sum-valid-keys today typing-key-interval)))}
+               {:name  "desk hours " :value (format "%.2f" (double (sum-valid-keys today desk-key-interval)))}
                {:name  "keys this hour" :value (count (last part))}]]
     (pp/print-table table)))
 
@@ -99,7 +95,6 @@
 (defn get-report [data]
   (let [days  (partition-by #(.getDayOfWeek (:obj (:time %)))  data)]
     (print-today-report days)))
-  ;; (get-frequencies data)
 
 (defn set-interval [callback ms]
   (future (while true (do (Thread/sleep ms) (callback)))))

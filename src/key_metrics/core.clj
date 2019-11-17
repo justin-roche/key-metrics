@@ -3,6 +3,7 @@
             [clojure.pprint :as pp]))
 
 (def log-path "/Users/justin/logfile.txt")
+(def log-file-delimiter "::")
 (def hour-keys 3500)
 (def day-hours (* hour-keys 8))
 
@@ -16,7 +17,10 @@
      :hour (.getHour ldt)}))
 
 (defn add-line [l]
-  (let [entry  (str/split l #" :: ")]
+  ;; parse a single line of the log file; parse individual keys to remove surrounding elements
+  (let [entry  (->> (re-pattern log-file-delimiter)
+                (str/split l)
+                (map str/trim))]
     (vector (str/replace (first entry) #"\[|\]" "")
             (parse-date (last entry)))))
 
@@ -74,7 +78,6 @@
     (if (some #(= "r" %) args)
       (do (get-report data))
       nil)))
-
 
 (-main "r")
 ;; (def job (set-interval get-data 1000))

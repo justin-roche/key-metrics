@@ -57,14 +57,24 @@
                        :count (second el)}) table-data)]
     (pp/print-table table)))
 
-(defn get-data []
-  (let [data (read-file)
-        days  (partition-by #(.getDayOfWeek (:obj (last %)))  data)]
-    (get-frequencies data)))
+(defn get-report [data]
+  (println "getting report")
+  (let [days  (partition-by #(.getDayOfWeek (:obj (last %)))  data)]
+    (print-report days)))
+  ;; (get-frequencies data)
 
 (defn set-interval [callback ms]
   (future (while true (do (Thread/sleep ms) (callback)))))
 
-(get-data)
+(defn -main [& args]
+  (println "args:" args)
+  (let [data (read-file)]
+    (if (some #(= "keys" %) args)
+      (get-frequencies data))
+    (if (some #(= "r" %) args)
+      (do (get-report data))
+      nil)))
 
+
+(-main "r")
 ;; (def job (set-interval get-data 1000))

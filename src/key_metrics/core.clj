@@ -77,10 +77,12 @@
                 :value (:keys report) :target keys-per-day}
                {:name  "percentage keys "
                 :value (:perc-keys report)}
-               {:name  "desk hours "
-                :value (format "%.2f" (:desk-hours report))}
                {:name  "key hours "
                 :value (format "%.2f" (:key-hours report))}
+               {:name  "desk hours "
+                :value (format "%.2f" (:desk-hours report))}
+               {:name  "typing hours "
+                :value (format "%.2f" (:typing-hours report))}
                {:name  "keys this hour "
                 :value (:keys-this-hour report)}]]
     (pp/print-table table)))
@@ -107,7 +109,7 @@
      :time (get-epoch (java.time.LocalDateTime/now))
      :date (.format (java.time.LocalDateTime/now) (get-formatter "DD-MM-YYYY"))
      :perc-keys (get-percent-for-day today)
-     :key-hours (get-key-hours today)
+     :key-hours (double (get-key-hours today))
      :typing-hours (double (sum-valid-keys today typing-key-interval))
      :desk-hours (double (sum-valid-keys today desk-key-interval))
      :keys-this-hour (count (last today-hours))}))
@@ -119,9 +121,9 @@
   (let [data (read-file)
         days (read-days data)
         report (get-report data)]
-    (println "got report")
     (print-report report)
-    (db/syncdb report)))
+    ;; (db/syncdb report)
+    ))
 
 (-main)
 

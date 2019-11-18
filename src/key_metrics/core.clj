@@ -1,13 +1,14 @@
 (ns key-metrics.core
   (:require [clojure.string :as str]
             [clojure.pprint :as pp]
+            [repl-plot.core :as plot]
             [key-metrics.db :as db]))
 
 (def log-path "/Users/justin/logfile.txt")
 (def log-file-delimiter "::")
 (def keys-per-hour 5000)
 
-(def desk-key-interval 100)
+(def sitting-key-interval 100)
 ;; how close (in seconds) should two keys be for you to be considered "at your desk"
 
 (def typing-key-interval 5)
@@ -79,8 +80,8 @@
                 :value (:perc-keys report)}
                {:name  "key hours "
                 :value (format "%.2f" (:key-hours report))}
-               {:name  "desk hours "
-                :value (format "%.2f" (:desk-hours report))}
+               {:name  "sitting hours "
+                :value (format "%.2f" (:sitting-hours report))}
                {:name  "typing hours "
                 :value (format "%.2f" (:typing-hours report))}
                {:name  "keys this hour "
@@ -100,31 +101,43 @@
 (defn read-days [data]
   (partition-by #(.getDayOfWeek (:obj (:time %)))  data))
 
-(defn get-report [data]
+(defn get-report [today today-hours]
   ;; get report for one day in serializable format
-  (let [days (read-days data)
-        today (vec (last days))
-        today-hours (part-hour today)]
-    {:keys (count today)
-     :time (get-epoch (java.time.LocalDateTime/now))
-     :date (.format (java.time.LocalDateTime/now) (get-formatter "DD-MM-YYYY"))
-     :perc-keys (get-percent-for-day today)
-     :key-hours (double (get-key-hours today))
-     :typing-hours (double (sum-valid-keys today typing-key-interval))
-     :desk-hours (double (sum-valid-keys today desk-key-interval))
-     :keys-this-hour (count (last today-hours))}))
+  {:keys (count today)
+   :time (get-epoch (java.time.LocalDateTime/now))
+   :date (.format (java.time.LocalDateTime/now) (get-formatter "DD-MM-YYYY"))
+   :perc-keys (get-percent-for-day today)
+   :key-hours (double (get-key-hours today))
+   :typing-hours (double (sum-valid-keys today typing-key-interval))
+   :sitting-hours (double (sum-valid-keys today sitting-key-interval))
+   :keys-this-hour (count (last today-hours))})
 
 (defn set-interval [callback ms]
   (future (while true (do (Thread/sleep ms) (callback)))))
 
+(defn create-hour-totals [raw-hours]
+  (loop [i 0 v (vec (repeat 24 0))]
+    (if (= i (count raw-hours))
+      v
+      (let [h (get-in (nth raw-hours i) [:time :hour])]
+        (recur (inc i) (assoc v h (inc (nth v h))))))))
+
+(defn plot-day [hours]
+  (let [xs (mapv float (range 24))
+        ys (mapv float hours)]
+    (plot/plot xs ys :max-height 10  :x-axis-display-step 5.0 :precision 0.0)))
+
 (defn -main [& args]
   (let [data (read-file)
         days (read-days data)
-        report (get-report data)]
+        today (vec (last days))
+        today-hours (part-hour today)
+        hour-totals (create-hour-totals today)
+        report (get-report today today-hours)]
+    (plot-day hour-totals)
     (print-report report)
-    ;; (db/syncdb report)
+    (db/syncdb report)
     ))
 
 (-main)
 
-;; (def job (set-interval get-data 1000))

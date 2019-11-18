@@ -85,7 +85,9 @@
                {:name  "typing hours "
                 :value (format "%.2f" (:typing-hours report))}
                {:name  "keys this hour "
-                :value (:keys-this-hour report)}]]
+                :value (:keys-this-hour report)}
+               {:name  "date"
+                :value (:date report)}]]
     (pp/print-table table)))
 
 (defn get-frequencies [data]
@@ -105,7 +107,7 @@
   ;; get report for one day in serializable format
   {:keys (count today)
    :time (get-epoch (java.time.LocalDateTime/now))
-   :date (.format (java.time.LocalDateTime/now) (get-formatter "DD-MM-YYYY"))
+   :date (.format (java.time.LocalDateTime/now) (get-formatter "dd-MM-YYYY"))
    :perc-keys (get-percent-for-day today)
    :key-hours (double (get-key-hours today))
    :typing-hours (double (sum-valid-keys today typing-key-interval))
@@ -136,8 +138,7 @@
         report (get-report today today-hours)]
     (plot-day hour-totals)
     (print-report report)
-    (db/syncdb report)
-    ))
+    (db/syncdb report)))
 
 (-main)
 

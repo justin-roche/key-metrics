@@ -1,6 +1,8 @@
 /target
 /classes
 /checkouts
+/src/key_metrics/dbpass.clj
+dump.rdb
 profiles.clj
 pom.xml
 pom.xml.asc

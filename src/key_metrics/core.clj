@@ -1,10 +1,11 @@
 (ns key-metrics.core
   (:require [clojure.string :as str]
-            [clojure.pprint :as pp]))
+            [clojure.pprint :as pp]
+            [key-metrics.db :as db]))
 
 (def log-path "/Users/justin/logfile.txt")
 (def log-file-delimiter "::")
-(def keys-per-hour 4000)
+(def keys-per-hour 5000)
 
 (def desk-key-interval 100)
 ;; how close (in seconds) should two keys be for you to be considered "at your desk"
@@ -66,20 +67,22 @@
 
 (defn get-key-hours [day]
   ;; get the number of work hours per day based on estimated keys per work hour
-  (int (/ (count day) keys-per-hour)))
+  (float (/ (count day) keys-per-hour)))
 
 (defn get-percent-for-day [d]
   (int (* 100 (/ (count d) keys-per-day))))
 
-(defn print-today-report [days]
-  (let [today (vec (last days))
-        part (part-hour today)
-        table [{:name  "keys " :value (str (count today) "/" keys-per-day)}
-               {:name  "percent keys " :value (get-percent-for-day today)}
-               {:name  "key hours " :value (get-key-hours today)}
-               {:name  "typing hours " :value (format "%.2f" (double (sum-valid-keys today typing-key-interval)))}
-               {:name  "desk hours " :value (format "%.2f" (double (sum-valid-keys today desk-key-interval)))}
-               {:name  "keys this hour" :value (count (last part))}]]
+(defn print-report [report]
+  (let [table [{:name  "keys "
+                :value (:keys report) :target keys-per-day}
+               {:name  "percentage keys "
+                :value (:perc-keys report)}
+               {:name  "desk hours "
+                :value (format "%.2f" (:desk-hours report))}
+               {:name  "key hours "
+                :value (format "%.2f" (:key-hours report))}
+               {:name  "keys this hour "
+                :value (:keys-this-hour report)}]]
     (pp/print-table table)))
 
 (defn get-frequencies [data]
@@ -92,21 +95,34 @@
                        :count (second el)}) table-data)]
     (pp/print-table table)))
 
+(defn read-days [data]
+  (partition-by #(.getDayOfWeek (:obj (:time %)))  data))
+
 (defn get-report [data]
-  (let [days  (partition-by #(.getDayOfWeek (:obj (:time %)))  data)]
-    (print-today-report days)))
+  ;; get report for one day in serializable format
+  (let [days (read-days data)
+        today (vec (last days))
+        today-hours (part-hour today)]
+    {:keys (count today)
+     :time (get-epoch (java.time.LocalDateTime/now))
+     :date (.format (java.time.LocalDateTime/now) (get-formatter "DD-MM-YYYY"))
+     :perc-keys (get-percent-for-day today)
+     :key-hours (get-key-hours today)
+     :typing-hours (double (sum-valid-keys today typing-key-interval))
+     :desk-hours (double (sum-valid-keys today desk-key-interval))
+     :keys-this-hour (count (last today-hours))}))
 
 (defn set-interval [callback ms]
   (future (while true (do (Thread/sleep ms) (callback)))))
 
 (defn -main [& args]
-  (println "args:" args)
-  (let [data (read-file)]
-    (if (some #(= "keys" %) args)
-      (get-frequencies data))
-    (if (some #(= "r" %) args)
-      (do (get-report data))
-      nil)))
+  (let [data (read-file)
+        days (read-days data)
+        report (get-report data)]
+    (println "got report")
+    (print-report report)
+    (db/syncdb report)))
 
-(-main "r")
+(-main)
+
 ;; (def job (set-interval get-data 1000))

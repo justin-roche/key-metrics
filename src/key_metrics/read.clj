@@ -41,12 +41,12 @@
 (defn read-days []
   (let [key-records (read-log)
         days (group-by #(epoch-to-record-date (:epoch %)) key-records)]
-    (db/update-key-events days))
-
-  )
+    (db/update-key-events days)))
 
 (defn clear-logfile []
-  )
+  (let [pw (clojure.java.io/writer log-path)]
+    (.close pw)
+    ))
 
-(read-days)
+;; (read-days)
 (clear-logfile)

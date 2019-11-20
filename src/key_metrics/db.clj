@@ -21,14 +21,19 @@
       (println "exited with 0")
       (println "no 0"))))
 
-(defn get-day [date]
-  (wcar* (car/ping)
-         (car/get "foo")))
+(defn get-report [date]
+  (wcar* 
+         (car/get date)))
 
 (defn add-report [report]
   (wcar* (car/ping)
          (car/set (:date report) report)
          (car/get (:date report))))
+
+(defn get-reports [v]
+  (let [reports (map #(get-report %) v)]
+    ;; (map #(println %) reports)
+    reports))
 
 (defn syncdb [d]
   (println (count d))

@@ -7,6 +7,7 @@
 (def log-path "/Users/justin/logfile.txt")
 (def log-file-delimiter "::")
 (def keys-per-hour 5000)
+(def date-save-format "dd-MM-YYYY")
 
 (def sitting-key-interval 100)
 ;; how close (in seconds) should two keys be for you to be considered "at your desk"
@@ -107,7 +108,7 @@
   ;; get report for one day in serializable format
   {:keys (count today)
    :time (get-epoch (java.time.LocalDateTime/now))
-   :date (.format (java.time.LocalDateTime/now) (get-formatter "dd-MM-YYYY"))
+   :date (.format (java.time.LocalDateTime/now) (get-formatter date-save-format))
    :perc-keys (get-percent-for-day today)
    :key-hours (double (get-key-hours today))
    :typing-hours (double (sum-valid-keys today typing-key-interval))
@@ -129,6 +130,22 @@
         ys (mapv float hours)]
     (plot/plot xs ys :max-height 10  :x-axis-display-step 5.0 :precision 0.0)))
 
+(defn plot-ten-days [reports k]
+  (let [xs (mapv float (range 10))
+        ys (reverse (map (fn [r]
+                           (if r
+                             (float (k r))
+                             0)) reports))]
+    (plot/plot xs ys :max-height 10  :x-axis-display-step 5.0 :precision 0.0)))
+
+(defn create-n-day-report [n]
+  (let [dates (->> (java.time.LocalDateTime/now)
+                   (iterate #(.minusDays % 1))
+                   (map #(.format % (get-formatter date-save-format)))
+                   (take n))
+        reports (db/get-reports dates)]
+    (plot-ten-days reports :perc-keys)))
+
 (defn -main [& args]
   (let [data (read-file)
         days (read-days data)
@@ -136,9 +153,9 @@
         today-hours (part-hour today)
         hour-totals (create-hour-totals today)
         report (get-report today today-hours)]
+    (db/syncdb report)
     (plot-day hour-totals)
     (print-report report)
-    (db/syncdb report)))
+    (create-n-day-report 10)))
 
 (-main)
-

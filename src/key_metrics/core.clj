@@ -27,13 +27,20 @@
 (def typing-key-interval 5)
 ;; how close (in seconds) should two keys be for you to be considered typing
 
+(def break-interval (* 5 60))
+;; how many seconds should two keys be apart for you to be considered on a break
+
 (def keys-per-day (* keys-per-hour 8))
+
 
 ;================================== utilities ==================================
 
 
 (defn get-epoch [ldt]
   (.toEpochSecond (.atZone  ldt (java.time.ZoneId/systemDefault))))
+
+(defn format-by-clock-time [ldt]
+  (.format ldt (get-formatter "hh:mm")))
 
 (defn parse-date [d]
   (let [formatter  (get-formatter "E MMM dd HH:mm:ss yyyy")
@@ -78,8 +85,23 @@
   (partition-by #(.getDayOfWeek (:obj (:time %)))  data))
 
 ;=================================== analysis ==================================
-
-(defn sum-valid-keys [keys interval]
+(defn get-key-intervals [keys interval]
+  ;; accumulate the intervals between key events as a series if the difference meets a selected criteria
+  (println (filter #(> (:dif %) interval)
+                         (map (fn [a b] {:a (format-by-clock-time (:obj (:time a)))
+                                         :b (format-by-clock-time (:obj (:time b)))
+                                         :dif (get-epoch-difference b a)})
+                              keys (subvec keys 1))))
+  ;; (loop [i 1 c []]
+  ;;   (if (= i (count keys))
+  ;;     c
+  ;;     (let [a (nth keys i)
+  ;;           b (nth keys (dec i))
+  ;;           dif (get-epoch-difference a b)
+  ;;           p (comp-fn dif interval)]
+  ;;       (recur (inc i) (if p (conj c dif) c))))))
+  )
+(defn sum-valid-keys [keys interval comp-fn]
 ;; accumulate the interval difference as a running total if the difference is less than the specified interval 
   (second-to-hours (loop [i 1 c 0]
                      (if (= i (count keys))
@@ -87,7 +109,7 @@
                        (let [a (nth keys i)
                              b (nth keys (dec i))
                              dif (get-epoch-difference a b)
-                             p (< dif interval)]
+                             p (comp-fn dif interval)]
                          (recur (inc i) (+ c (if p dif 0))))))))
 
 (defn create-hour-totals [raw-hours]
@@ -166,14 +188,16 @@
 
 (defn create-report [today today-hours]
   ;; get report for one day in serializable format
+  (println "got data")
   {:keys (count today)
    :time (get-epoch (java.time.LocalDateTime/now))
-   ;; :clock-time (get-epoch (java.time.LocalDateTime/now))
+   :clock-time (get-epoch (java.time.LocalDateTime/now))
    :date (.format (java.time.LocalDateTime/now) (get-formatter date-save-format))
    :perc-keys (get-percent-for-day today)
    :key-hours (double (get-key-hours today))
-   :typing-hours (double (sum-valid-keys today typing-key-interval))
-   :sitting-hours (double (sum-valid-keys today sitting-key-interval))
+   :typing-hours (double (sum-valid-keys today typing-key-interval <))
+   :sitting-hours (double (sum-valid-keys today sitting-key-interval <))
+   :break-hours (get-key-intervals today break-interval)
    :keys-this-hour (count (last today-hours))})
 
 ;===================================== main ====================================
@@ -181,16 +205,16 @@
 (defn -main [& args]
   (let [data (read-file)
         days (read-days data)
-        today (vec (last days))
+        today  (vec (last days)) 
         today-hours (part-hour today)
         hour-totals (create-hour-totals today)
         report (create-report today today-hours)]
     (db/add-report report)
-    ;; (create-n-day-report 10 :perc-keys)
-    ;; (plot-day hour-totals)
+    (create-n-day-report 10 :perc-keys)
+    (plot-day hour-totals)
     (print-report report)))
-
-(-main)
 
 (defn set-interval [callback ms]
   (future (while true (do (Thread/sleep ms) (callback)))))
+
+(-main)

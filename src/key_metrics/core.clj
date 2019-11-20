@@ -7,7 +7,15 @@
 (def log-path "/Users/justin/logfile.txt")
 (def log-file-delimiter "::")
 (def keys-per-hour 5000)
+
+(def date-read-format "E MMM dd HH:mm:ss yyyy")
+;; the format for dates in the raw keylog
+
 (def date-save-format "dd-MM-YYYY")
+;; the format to store dates in the db
+
+(def date-read-formatter (get-formatter date-read-format)  )
+(def date-save-formatter (get-formatter date-save-format)  )
 
 (def sitting-key-interval 100)
 ;; how close (in seconds) should two keys be for you to be considered "at your desk"
@@ -138,13 +146,14 @@
                              0)) reports))]
     (plot/plot xs ys :max-height 10  :x-axis-display-step 5.0 :precision 0.0)))
 
-(defn create-n-day-report [n]
+(defn create-n-day-report [n k]
+  ;; create a report for n days, focusing on field k (ex: "perc-keys")
   (let [dates (->> (java.time.LocalDateTime/now)
                    (iterate #(.minusDays % 1))
                    (map #(.format % (get-formatter date-save-format)))
                    (take n))
         reports (db/get-reports dates)]
-    (plot-n-days reports :perc-keys)))
+    (plot-n-days reports k)))
 
 (defn -main [& args]
   (let [data (read-file)
@@ -156,6 +165,6 @@
     (db/syncdb report)
     (plot-day hour-totals)
     (print-report report)
-    (create-n-day-report 10)))
+    (create-n-day-report 10 :perc-keys)))
 
 (-main)

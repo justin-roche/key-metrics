@@ -21,22 +21,31 @@
       (println "exited with 0")
       (println "no 0"))))
 
+(defn update-key-event-seq [keys]
+  ;; add a key event sequence for day (first keys) if it does not exist, otherwise concat to existing value
+  (let [name (str "keys-" (first keys))
+        cur (wcar* (car/get name))]
+    (if cur
+      (wcar* (car/set name (concat cur (second keys))))
+      (wcar* (car/set name (concat [] (second keys)))))))
+
+(defn update-key-events [days]
+  (for [s  days]
+    (update-key-event-seq s)))
+
 (defn get-report [date]
-  (wcar* 
-         (car/get date)))
+  (wcar*
+   (car/get date)))
 
 (defn add-report [report]
-  (wcar* (car/ping)
-         (car/set (:date report) report)
-         (car/get (:date report))))
+  (wcar*
+   (car/set (:date report) report)
+   (car/get (:date report))))
 
 (defn get-reports [v]
   (let [reports (map #(get-report %) v)]
-    ;; (map #(println %) reports)
     reports))
 
-(defn syncdb [d]
-  (println (count d))
-  (add-report d))
+
 
 ;; (conn)

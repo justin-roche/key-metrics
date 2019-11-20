@@ -1,9 +1,10 @@
 (ns key-metrics.read
-  (:require [clojure.string :as str]))
+  (:require [clojure.string :as str]
+            [key-metrics.db :as db]))
 
 ;; read log file into key event lists by day
 
-(def log-path "/Users/justin/logfile.txt")
+(def log-path "/Users/justin/test.txt")
 (def log-file-delimiter "::")
 
 (def date-save-format "dd-MM-YYYY")
@@ -21,7 +22,7 @@
 
 (defn epoch-to-record-date [d]
   (.format (java.time.LocalDateTime/ofInstant
-            ( java.time.Instant/ofEpochSecond d)
+            (java.time.Instant/ofEpochSecond d)
             (java.time.ZoneId/systemDefault))
            (get-formatter date-save-format)))
 
@@ -40,7 +41,12 @@
 (defn read-days []
   (let [key-records (read-log)
         days (group-by #(epoch-to-record-date (:epoch %)) key-records)]
-    (println "saving days:" (count days))
-    ))
+    (db/update-key-events days))
+
+  )
+
+(defn clear-logfile []
+  )
 
 (read-days)
+(clear-logfile)

@@ -85,22 +85,18 @@
   (partition-by #(.getDayOfWeek (:obj (:time %)))  data))
 
 ;=================================== analysis ==================================
+(defn interval-map [a b]
+  {:a (format-by-clock-time (:obj (:time a)))
+   :b (format-by-clock-time (:obj (:time b)))
+   :_dif (int (/ (get-epoch-difference b a) 60))
+   :dif (get-epoch-difference b a)})
+
 (defn get-key-intervals [keys interval]
   ;; accumulate the intervals between key events as a series if the difference meets a selected criteria
-  (println (filter #(> (:dif %) interval)
-                         (map (fn [a b] {:a (format-by-clock-time (:obj (:time a)))
-                                         :b (format-by-clock-time (:obj (:time b)))
-                                         :dif (get-epoch-difference b a)})
-                              keys (subvec keys 1))))
-  ;; (loop [i 1 c []]
-  ;;   (if (= i (count keys))
-  ;;     c
-  ;;     (let [a (nth keys i)
-  ;;           b (nth keys (dec i))
-  ;;           dif (get-epoch-difference a b)
-  ;;           p (comp-fn dif interval)]
-  ;;       (recur (inc i) (if p (conj c dif) c))))))
-  )
+  (let [intervals  (->> (map interval-map keys (subvec keys 1))
+                        (filter #(> (:dif %) interval)))]
+    (pprint intervals)))
+
 (defn sum-valid-keys [keys interval comp-fn]
 ;; accumulate the interval difference as a running total if the difference is less than the specified interval 
   (second-to-hours (loop [i 1 c 0]
@@ -205,7 +201,7 @@
 (defn -main [& args]
   (let [data (read-file)
         days (read-days data)
-        today  (vec (last days)) 
+        today  (vec (last days))
         today-hours (part-hour today)
         hour-totals (create-hour-totals today)
         report (create-report today today-hours)]

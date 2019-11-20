@@ -10,6 +10,8 @@
 (def log-file-delimiter "::")
 (def keys-per-hour 5000)
 
+(defn get-formatter [s]
+  (java.time.format.DateTimeFormatter/ofPattern s))
 (def date-read-format "E MMM dd HH:mm:ss yyyy")
 ;; the format for dates in the raw keylog
 
@@ -29,8 +31,6 @@
 
 ;================================== utilities ==================================
 
-(defn get-formatter [s]
-  (java.time.format.DateTimeFormatter/ofPattern s))
 
 (defn get-epoch [ldt]
   (.toEpochSecond (.atZone  ldt (java.time.ZoneId/systemDefault))))
@@ -65,6 +65,7 @@
 
 
 ;=============================== data collection ===============================
+
 
 (defn part-hour [keys]
   (partition-by #(:hour (:time %)) keys))
@@ -106,7 +107,9 @@
 ;=================================== printing ==================================
 
 (defn print-report [report]
-  (let [table [{:name  "keys "
+  (let [table [{:name  "time"
+                :value (.format (java.time.LocalDateTime/now) (get-formatter "hh:mm"))}
+               {:name  "keys "
                 :value (:keys report) :target keys-per-day}
                {:name  "percentage keys "
                 :value (:perc-keys report)}
@@ -120,7 +123,9 @@
                 :value (:keys-this-hour report)}
                {:name  "date"
                 :value (:date report)}]]
-    (pp/print-table table)))
+    (pp/print-table table)
+    ;; (println "current time: " )
+    ))
 
 (defn plot-day [hours]
   (let [xs (mapv float (range 24))
@@ -149,6 +154,7 @@
 
 ;=================================== reports ===================================
 
+
 (defn create-n-day-report [n k]
   ;; create a report for n days, focusing on field k (ex: "perc-keys")
   (let [dates (->> (java.time.LocalDateTime/now)
@@ -162,6 +168,7 @@
   ;; get report for one day in serializable format
   {:keys (count today)
    :time (get-epoch (java.time.LocalDateTime/now))
+   ;; :clock-time (get-epoch (java.time.LocalDateTime/now))
    :date (.format (java.time.LocalDateTime/now) (get-formatter date-save-format))
    :perc-keys (get-percent-for-day today)
    :key-hours (double (get-key-hours today))
@@ -178,10 +185,10 @@
         today-hours (part-hour today)
         hour-totals (create-hour-totals today)
         report (create-report today today-hours)]
-    (db/syncdb report)
-    (plot-day hour-totals)
-    (print-report report)
-    (create-n-day-report 10 :perc-keys)))
+    (db/add-report report)
+    ;; (create-n-day-report 10 :perc-keys)
+    ;; (plot-day hour-totals)
+    (print-report report)))
 
 (-main)
 

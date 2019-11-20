@@ -130,8 +130,8 @@
         ys (mapv float hours)]
     (plot/plot xs ys :max-height 10  :x-axis-display-step 5.0 :precision 0.0)))
 
-(defn plot-ten-days [reports k]
-  (let [xs (mapv float (range 10))
+(defn plot-n-days [reports k]
+  (let [xs (mapv float (range (count reports)))
         ys (reverse (map (fn [r]
                            (if r
                              (float (k r))
@@ -144,7 +144,7 @@
                    (map #(.format % (get-formatter date-save-format)))
                    (take n))
         reports (db/get-reports dates)]
-    (plot-ten-days reports :perc-keys)))
+    (plot-n-days reports :perc-keys)))
 
 (defn -main [& args]
   (let [data (read-file)

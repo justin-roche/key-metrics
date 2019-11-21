@@ -2,6 +2,7 @@
   (:require [clojure.string :as str]
             [clojure.pprint :as pp]
             [repl-plot.core :as plot]
+            [key-metrics.utils :refer :all]
             [key-metrics.db :as db]))
 
 ;=================================== settings ==================================
@@ -9,17 +10,6 @@
 (def log-path "/Users/justin/logfile.txt")
 (def log-file-delimiter "::")
 (def keys-per-hour 5000)
-
-(defn get-formatter [s]
-  (java.time.format.DateTimeFormatter/ofPattern s))
-(def date-read-format "E MMM dd HH:mm:ss yyyy")
-;; the format for dates in the raw keylog
-
-(def date-save-format "dd-MM-YYYY")
-;; the format to store dates in the db
-
-(def date-read-formatter (get-formatter date-read-format))
-(def date-save-formatter (get-formatter date-save-format))
 
 (def sitting-key-interval 100)
 ;; how close (in seconds) should two keys be for you to be considered "at your desk"
@@ -35,28 +25,8 @@
 
 ;================================== utilities ==================================
 
-
-(defn get-epoch [ldt]
-  (.toEpochSecond (.atZone  ldt (java.time.ZoneId/systemDefault))))
-
-(defn format-by-clock-time [ldt]
-  (.format ldt (get-formatter "hh:mm")))
-
-(defn parse-date [d]
-  (let [formatter  (get-formatter "E MMM dd HH:mm:ss yyyy")
-        ldt  (java.time.LocalDateTime/parse d formatter)]
-    {:obj ldt
-     :epoch (get-epoch ldt)
-     :hour (.getHour ldt)}))
-
-(defn get-epoch-difference [a b]
-  (- (:epoch (:time a))
-     (:epoch (:time b))))
-
-(defn second-to-hours [s]
-  (/ (/ s 60) 60))
-
 ;================================== file read ==================================
+
 
 (defn add-line [l]
   ;; parse a single line of the log file; parse individual keys to remove surrounding elements
@@ -94,8 +64,7 @@
 (defn get-key-intervals [keys interval]
   ;; accumulate the intervals between key events as a series if the difference meets a selected criteria
   (let [intervals  (->> (map interval-map keys (subvec keys 1))
-                        (filter #(> (:dif %) interval)))]
-    (pprint intervals)))
+                        (filter #(> (:dif %) interval)))]))
 
 (defn sum-valid-keys [keys interval comp-fn]
 ;; accumulate the interval difference as a running total if the difference is less than the specified interval 
@@ -123,42 +92,6 @@
   (int (* 100 (/ (count d) keys-per-day))))
 
 ;=================================== printing ==================================
-
-(defn print-report [report]
-  (let [table [{:name  "time"
-                :value (.format (java.time.LocalDateTime/now) (get-formatter "hh:mm"))}
-               {:name  "keys "
-                :value (:keys report) :target keys-per-day}
-               {:name  "percentage keys "
-                :value (:perc-keys report)}
-               {:name  "key hours "
-                :value (format "%.2f" (:key-hours report))}
-               {:name  "sitting hours "
-                :value (format "%.2f" (:sitting-hours report))}
-               {:name  "typing hours "
-                :value (format "%.2f" (:typing-hours report))}
-               {:name  "keys this hour "
-                :value (:keys-this-hour report)}
-               {:name  "date"
-                :value (:date report)}]]
-    (pp/print-table table)
-    ;; (println "current time: " )
-    ))
-
-(defn plot-day [hours]
-  (let [xs (mapv float (range 24))
-        ys (mapv float hours)]
-    (plot/plot xs ys :max-height 10  :x-axis-display-step 5.0 :precision 0.0)))
-
-(defn plot-n-days [reports k]
-  ;; plot n days focusing on field k
-  (let [xs (mapv float (range (count reports)))
-        ys (reverse (map (fn [r]
-                           (if r
-                             (float (k r))
-                             0)) reports))]
-    (plot/plot xs ys :max-height 10  :x-axis-display-step 5.0 :precision 0.0)))
-
 (defn get-frequencies [data]
   (let [table-data (->> (map first data)
                         frequencies
@@ -208,7 +141,8 @@
     (db/add-report report)
     (create-n-day-report 10 :perc-keys)
     (plot-day hour-totals)
-    (print-report report)))
+    (print-report report)
+    (print-break-report report)))
 
 (defn set-interval [callback ms]
   (future (while true (do (Thread/sleep ms) (callback)))))

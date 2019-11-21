@@ -1,9 +1,8 @@
 (ns key-metrics.core
   (:require [clojure.string :as str]
-            [clojure.pprint :as pp]
-            [repl-plot.core :as plot]
             [key-metrics.utils :refer :all]
-            [key-metrics.db :as db]))
+            [key-metrics.print :as km-print]
+            [key-metrics.db :as km-db]))
 
 ;=================================== settings ==================================
 
@@ -92,42 +91,43 @@
   (int (* 100 (/ (count d) keys-per-day))))
 
 ;=================================== printing ==================================
-(defn get-frequencies [data]
+(defn get-key-frequencies [data]
   (let [table-data (->> (map first data)
                         frequencies
                         (sort-by last)
                         vec)
         table (map  (fn [el]
                       {:key (first el)
-                       :count (second el)}) table-data)]
-    (pp/print-table table)))
+                       :count (second el)}) table-data)]))
 
 
 ;=================================== reports ===================================
 
 
 (defn create-n-day-report [n k]
-  ;; create a report for n days, focusing on field k (ex: "perc-keys")
+  ;; query the db, creating a report for n days, focusing on field k (ex: "perc-keys")
   (let [dates (->> (java.time.LocalDateTime/now)
                    (iterate #(.minusDays % 1))
                    (map #(.format % (get-formatter date-save-format)))
                    (take n))
-        reports (db/get-reports dates)]
-    (plot-n-days reports k)))
+        reports (km-db/get-reports dates)]
+    reports))
 
 (defn create-report [today today-hours]
-  ;; get report for one day in serializable format
-  (println "got data")
-  {:keys (count today)
-   :time (get-epoch (java.time.LocalDateTime/now))
-   :clock-time (get-epoch (java.time.LocalDateTime/now))
-   :date (.format (java.time.LocalDateTime/now) (get-formatter date-save-format))
-   :perc-keys (get-percent-for-day today)
-   :key-hours (double (get-key-hours today))
-   :typing-hours (double (sum-valid-keys today typing-key-interval <))
-   :sitting-hours (double (sum-valid-keys today sitting-key-interval <))
-   :break-hours (get-key-intervals today break-interval)
-   :keys-this-hour (count (last today-hours))})
+;; get report for one day in serializable format
+  (let  [report {:keys (count today)
+                 :time (get-epoch (java.time.LocalDateTime/now))
+                 :clock-time (get-epoch (java.time.LocalDateTime/now))
+                 :date (.format (java.time.LocalDateTime/now) (get-formatter date-save-format))
+                 :perc-keys (get-percent-for-day today)
+                 :key-hours (double (get-key-hours today))
+                 :typing-hours (double (sum-valid-keys today typing-key-interval <))
+                 :sitting-hours (double (sum-valid-keys today sitting-key-interval <))
+                 :break-hours (get-key-intervals today break-interval)
+                 :keys-this-hour (count (last today-hours))}]
+    (println "saving...")
+    (km-db/add-report report)
+    report))
 
 ;===================================== main ====================================
 
@@ -137,14 +137,15 @@
         today  (vec (last days))
         today-hours (part-hour today)
         hour-totals (create-hour-totals today)
-        report (create-report today today-hours)]
-    (db/add-report report)
-    (create-n-day-report 10 :perc-keys)
-    (plot-day hour-totals)
-    (print-report report)
-    (print-break-report report)))
+        day-report (create-report today today-hours)
+        days-report (create-n-day-report 10 :perc-keys)]
+    (km-print/plot-n-days days-report :perc-keys)
+    (km-print/plot-day hour-totals)
+    (km-print/print-break-report day-report)
+    (km-print/print-report day-report)))
 
-(defn set-interval [callback ms]
-  (future (while true (do (Thread/sleep ms) (callback)))))
+;; (defn set-interval [callback ms]
+;;   (future (while true (do (Thread/sleep ms) (callback)))))
+
 
 (-main)

@@ -1,9 +1,7 @@
 (ns key-metrics.print
-  (:require [key-metrics.utils :refer :all]
-            [clojure.pprint :as pp]
-            [repl-plot.core :as plot]
-            ;;
-            ))
+  (:require [clojure.pprint :as pp]
+            [key-metrics.utils :refer :all]
+            [repl-plot.core :as plot]))
 
 (defn print-report [report]
   (let [table [{:name  "time"
@@ -23,6 +21,8 @@
                {:name  "date"
                 :value (:date report)}]]
     (pp/print-table table)))
+
+(defn print-break-report [report])
 
 (defn plot-day [hours]
   (let [xs (mapv float (range 24))

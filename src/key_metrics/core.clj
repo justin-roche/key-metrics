@@ -32,7 +32,7 @@
   (let [entry  (->> (re-pattern log-file-delimiter)
                     (str/split l)
                     (map str/trim))]
-    {:key (str/replace (first entry) #"\[|\]" "")
+    {:key "."
      :time (parse-date (last entry))}))
 
 (defn read-file []
@@ -63,7 +63,8 @@
 (defn get-key-intervals [keys interval]
   ;; accumulate the intervals between key events as a series if the difference meets a selected criteria
   (let [intervals  (->> (map interval-map keys (subvec keys 1))
-                        (filter #(> (:dif %) interval)))]))
+                        (filter #(> (:dif %) interval)))]
+    intervals))
 
 (defn sum-valid-keys [keys interval comp-fn]
 ;; accumulate the interval difference as a running total if the difference is less than the specified interval 
@@ -139,13 +140,10 @@
         hour-totals (create-hour-totals today)
         day-report (create-report today today-hours)
         days-report (create-n-day-report 10 :perc-keys)]
+
     (km-print/plot-n-days days-report :perc-keys)
     (km-print/plot-day hour-totals)
     (km-print/print-break-report day-report)
     (km-print/print-report day-report)))
-
-;; (defn set-interval [callback ms]
-;;   (future (while true (do (Thread/sleep ms) (callback)))))
-
 
 (-main)

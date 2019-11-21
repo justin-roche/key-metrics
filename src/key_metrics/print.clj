@@ -22,7 +22,15 @@
                 :value (:date report)}]]
     (pp/print-table table)))
 
-(defn print-break-report [report])
+(defn print-break-report [report]
+  (let [break-hours (:break-hours report)
+        table (vec (map
+                    (fn [i]
+                  ;; (println "i: " i)
+                      {:hour  (:a i)
+                       :duration (:_dif i)})
+                    break-hours))]
+    (pp/print-table table)))
 
 (defn plot-day [hours]
   (let [xs (mapv float (range 24))

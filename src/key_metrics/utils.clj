@@ -25,9 +25,21 @@
      :epoch (get-epoch ldt)
      :hour (.getHour ldt)}))
 
-(defn get-epoch-difference [a b]
-  (- (:epoch (:time a))
-     (:epoch (:time b))))
-
 (defn second-to-hours [s]
   (/ (/ s 60) 60))
+
+(defn get-formatter [s]
+  (java.time.format.DateTimeFormatter/ofPattern s))
+(def date-read-formatter (get-formatter date-read-format))
+
+(defn raw-date-to-epoch [d]
+  (.toEpochSecond (.atZone  (java.time.LocalDateTime/parse d date-read-formatter)
+                            (java.time.ZoneId/systemDefault))))
+
+;; read log file into key event lists by day
+(defn epoch-to-record-date [d]
+  (.format (java.time.LocalDateTime/ofInstant
+            (java.time.Instant/ofEpochSecond d)
+            (java.time.ZoneId/systemDefault))
+           (get-formatter date-save-format)))
+

@@ -53,7 +53,14 @@
 (defn read-days [data]
   (partition-by #(.getDayOfWeek (:obj (:time %)))  data))
 
+(defn get-epoch-difference [a b]
+  (- (:epoch (:time a))
+     (:epoch (:time b))))
+
+
 ;=================================== analysis ==================================
+
+
 (defn interval-map [a b]
   {:a (format-by-clock-time (:obj (:time a)))
    :b (format-by-clock-time (:obj (:time b)))

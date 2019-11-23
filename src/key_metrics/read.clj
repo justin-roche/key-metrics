@@ -16,14 +16,16 @@
      :epoch   (raw-date-to-epoch (last entry))}))
 
 (defn read-log []
+  ;; read the keylog one line at a time, filtering out empty lines
   (vec (with-open [rdr (clojure.java.io/reader log-path)]
          (doall (map read-log-line (filter #(> (count %) 0) (line-seq rdr)))))))
 
 (defn read-days []
-  (let [key-records (subvec (read-log) 100 1000)
+  ;; read the log and group it by days, adding results to db under the key(s): keys:dd-mm-yy
+  (let [key-records (read-log)
         days (group-by #(epoch-to-record-date (:epoch %)) key-records)]
-    (println "count: " (count key-records))
-    (println "days count: " (count days))
+    (println "key records" (count key-records))
+    (println "days" (count days))
     (db/update-key-events days)
     (db/info)))
 

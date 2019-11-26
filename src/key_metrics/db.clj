@@ -4,7 +4,8 @@
             [clojure.data.json :as json]
             [taoensso.carmine :as car :refer (wcar)]
             [clojure.pprint :as pp]
-            [key-metrics.utils :as km-utils]))
+            [key-metrics.utils :as km-utils]
+            [clojure.string :as str]))
 
 (def server1-conn {:pool {} :spec {:host "127.0.0.1"
                                    :port 6379
@@ -51,6 +52,7 @@
             (update-key-event-seq (get days name) name)) (keys days))))
 
 (defn get-key-events-for-day [d]
+  (println "getting events for " d)
   (wcar*
    (car/get (str "keys:" d))))
 
@@ -84,7 +86,10 @@
   (let [reports (map #(get-report %) v)]
     reports))
 
-
+(defn get-all-dates []
+  ;; get the list of all record dates for which there are key events
+  (map #(str/replace % #"keys:" "") (wcar*
+                                     (car/keys "keys:*"))))
 ;============================= db general functions ============================
 
 

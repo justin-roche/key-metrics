@@ -12,9 +12,13 @@
   ;; parse a single line of the log file; 
   (let [entry  (->> (re-pattern log-file-delimiter)
                     (str/split l)
-                    (map str/trim))]
+                    (map str/trim))
+        epoch (km-utils/raw-date-to-epoch (last entry))]
     {:key (first entry)
-     :epoch   (km-utils/raw-date-to-epoch (last entry))}))
+     :epoch epoch
+     :hour (km-utils/epoch-to-clock-hour epoch)
+     ;;
+     }))
 
 (defn read-log-lines []
   ;; read the keylog one line at a time, filtering out empty lines

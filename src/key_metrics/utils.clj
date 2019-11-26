@@ -15,6 +15,16 @@
 (defn get-epoch [ldt]
   (.toEpochSecond (.atZone  ldt (java.time.ZoneId/systemDefault))))
 
+(defn epoch-to-hhmm [epoch]
+  (.format (java.time.LocalDateTime/ofInstant
+            (java.time.Instant/ofEpochSecond epoch)
+            (java.time.ZoneId/systemDefault)) (get-formatter "hh:mm")))
+
+(defn epoch-to-ldt [epoch]
+  (java.time.LocalDateTime/ofInstant
+   (java.time.Instant/ofEpochSecond epoch)
+   (java.time.ZoneId/systemDefault)))
+
 (defn epoch-to-clock-hour [epoch]
   (.getHour (java.time.LocalDateTime/ofInstant
              (java.time.Instant/ofEpochSecond epoch)
@@ -41,8 +51,6 @@
   (.toEpochSecond (.atZone  (java.time.LocalDateTime/parse d date-read-formatter)
                             (java.time.ZoneId/systemDefault))))
 
-(defn get-todays-record-date []
-  (epoch-to-record-date (get-epoch (java.time.LocalDateTime/now))))
 ;; read log file into key event lists by day
 
 (defn epoch-to-record-date [d]
@@ -52,3 +60,5 @@
             (java.time.ZoneId/systemDefault))
            (get-formatter date-save-format)))
 
+(defn get-todays-record-date []
+  (epoch-to-record-date (get-epoch (java.time.LocalDateTime/now))))

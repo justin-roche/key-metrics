@@ -46,3 +46,9 @@
                              0)) reports))]
     (println "             n days report:")
     (plot/plot xs ys :max-height 10  :x-axis-display-step 5.0 :precision 0.0)))
+
+;; (defn log [& rest]
+;;   (set! *print-length* 10)
+;;   (newline)
+;;   (newline)
+;;   (apply (println s)))

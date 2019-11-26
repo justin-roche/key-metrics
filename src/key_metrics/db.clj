@@ -2,7 +2,9 @@
   (:require [key-metrics.dbpass :as pass]
             [clojure.java.shell :as shell]
             [clojure.data.json :as json]
-            [taoensso.carmine :as car :refer (wcar)]))
+            [taoensso.carmine :as car :refer (wcar)]
+            [clojure.pprint :as pp]
+            [key-metrics.utils :as km-utils]))
 
 (def server1-conn {:pool {} :spec {:host "127.0.0.1"
                                    :port 6379
@@ -16,25 +18,58 @@
 ;================================== key events =================================
 
 
-(defn update-key-events [days]
-  (doseq [x days]
-    (update-key-event-seq x)))
+(defn add-new-key-events [new-keys old-keys name]
+  ;; if a record (key event sequence) already exists for the day, add only new keys to it; filter out old (potentially duplicated) keys from new keys in case something has gone wrong
+  ;; (println old-keys)
+  (let [p  (filter #(> (:epoch %) (:epoch (first old-keys)))  new-keys)
+        l  (concat  p old-keys)]
+    (println "adding " (count p))
+    (wcar* (car/set name l))))
 
-(defn update-key-event-seq [keys]
-  ;; add a key event sequence for day (first keys) if it does not exist, otherwise concat to existing value
-  (println "updating db for day: " (first keys) " with count : " (count keys))
-  (let [name (str "keys:" (first keys))
-        cur (wcar* (car/get name))]
-    (if cur
-      (wcar* (car/set name (concat cur (second keys))))
-      (wcar* (car/set name (concat [] (second keys)))))))
+(defn add-new-key-event-seq [new-keys name]
+  ;; add totally new key event seqs for an entire day
+  ;; (println "adding new key event sequence for " name)
+  (println "adding new event sequence for " name (count new-keys))
+  (wcar* (car/set name new-keys)))
+
+(defn update-key-event-seq [new-keys name]
+  ;; add a key event sequence for day (first keys) if it does not exist, otherwise concat to existing value, filtering out keys that are duplicates (ie come before the last element of the existing sequence).
+  (let [dbname (str "keys:" name)
+        ;; new-keys (second keys)
+        old-keys (wcar* (car/get dbname))]
+    (do
+      (cond
+        (nil? old-keys) (add-new-key-event-seq  new-keys dbname)
+        (< (count old-keys) (count new-keys)) (add-new-key-events  new-keys old-keys dbname)
+        :else (println "skipping: " dbname)))))
+
+(defn update-key-events [days]
+  ;; (print "updating for " (count days) " days")
+  (newline)
+  (doall (map
+          (fn [name]
+            (update-key-event-seq (get days name) name)) (keys days))))
 
 (defn get-key-events-for-day [d]
   (wcar*
    (car/get (str "keys:" d))))
 
+(defn get-all-key-events []
+  (sort #(< (:epoch (first %1)) (:epoch (first %2))) (map (fn [name]
+                                                            (println "getting events for name " name)
+                                                            (wcar*
+                                                             (car/get name))) (wcar*
+                                                                               (car/keys "keys:*")))))
 ;=================================== reports ===================================
 
+
+(defn get-report-for-day [date]
+  (wcar*
+   (car/get (str "report:" date))))
+
+(defn add-report-for-day [date report]
+  (wcar*
+   (car/set (str "report:" date) report)))
 
 (defn get-report [date]
   (wcar*
@@ -81,18 +116,20 @@
 
 ;=================================== logging ===================================
 (defn info []
-  (println "    db info:   ")
+  (newline)
   (let [all (get-keys "*")
         keys (wcar*
               (car/keys "keys:*"))
-        counts (map #(count (wcar* (car/get %))) keys)]
-    (println "all: " all)
-    (println "keys: " keys)
-    (println "counts: " counts)
-    (println "total keys recorded: " (reduce + counts))))
+        counts (map #(count (wcar* (car/get %))) keys)
+        t (map (fn [name count]
+                 {:name name :count count}) keys counts)]
+    ;; (println "counts" counts)
+    (pp/print-table t)))
 
 (defn get-key-data [k]
   (wcar* (car/get k)))
+
+;===================================== dump ====================================
 
 (defn dump-key-data [k data]
   (with-open [wrtr (clojure.java.io/writer (str dump-path "rm-" k ".json"))]

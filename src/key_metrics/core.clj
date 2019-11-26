@@ -2,7 +2,8 @@
   (:require [clojure.string :as str]
             [key-metrics.utils :refer :all]
             [key-metrics.print :as km-print]
-            [key-metrics.db :as km-db]))
+            [key-metrics.db :as km-db]
+            [key-metrics.utils :as km-utils]))
 
 ;=================================== settings ==================================
 
@@ -121,12 +122,12 @@
         reports (km-db/get-reports dates)]
     reports))
 
-(defn create-report [today today-hours]
+(defn create-report [today today-hours ldt]
 ;; get report for one day in serializable format
   (let  [report {:keys (count today)
-                 :time (get-epoch (java.time.LocalDateTime/now))
-                 :clock-time (get-epoch (java.time.LocalDateTime/now))
-                 :date (.format (java.time.LocalDateTime/now) (get-formatter date-save-format))
+                 :time (get-epoch ldt)
+                 :clock-time (get-epoch ldt)
+                 :date (.format ldt (get-formatter date-save-format))
                  :perc-keys (get-percent-for-day today)
                  :key-hours (double (get-key-hours today))
                  :typing-hours (double (sum-valid-keys today typing-key-interval <))
@@ -145,12 +146,17 @@
         today  (vec (last days))
         today-hours (part-hour today)
         hour-totals (create-hour-totals today)
-        day-report (create-report today today-hours)
+        day-report (create-report today today-hours (java.time.LocalDateTime/now))
         days-report (create-n-day-report 10 :perc-keys)]
 
+    (map (fn [day]
+           (println "day" day)
+           (create-report (vec day) (part-hour (vec day)) (epoch-to-ldt
+                                                           (:epoch (last (last day)))))) days)
+
     (km-print/plot-n-days days-report :perc-keys)
-    (km-print/plot-day hour-totals)
-    (km-print/print-break-report day-report)
+    ;; (km-print/plot-day hour-totals)
+    ;; (km-print/print-break-report day-report)
     (km-print/print-report day-report)))
 
 (-main)

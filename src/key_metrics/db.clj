@@ -73,6 +73,10 @@
   (wcar*
    (car/set (str "report:" date) report)))
 
+(defn get-reports-for-days [v]
+  (let [reports (map #(get-report-for-day %) v)]
+    reports))
+
 (defn get-report [date]
   (wcar*
    (car/get date)))
@@ -81,10 +85,6 @@
   (wcar*
    (car/set (:date report) report)
    (car/get (:date report))))
-
-(defn get-reports [v]
-  (let [reports (map #(get-report %) v)]
-    reports))
 
 (defn get-all-dates []
   ;; get the list of all record dates for which there are key events

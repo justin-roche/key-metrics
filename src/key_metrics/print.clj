@@ -7,7 +7,7 @@
   (let [table [{:name  "time"
                 :value (.format (java.time.LocalDateTime/now) (get-formatter "hh:mm"))}
                {:name  "keys "
-                :value (:keys report) :target (:keys-per-day report)}
+                :value (:total-keys report) :target (:keys-per-day report)}
                {:name  "percentage keys "
                 :value (:perc-keys report)}
                {:name  "key hours "
@@ -40,10 +40,10 @@
 (defn plot-n-days [reports k]
   ;; plot n days focusing on field k
   (let [xs (mapv float (range (count reports)))
-        ys (reverse (map (fn [r]
-                           (if r
-                             (float (k r))
-                             0)) reports))]
+        ys (map (fn [r]
+                  (if r
+                    (float (k r))
+                    0)) reports)]
     (println "             n days report:")
     (plot/plot xs ys :max-height 10  :x-axis-display-step 5.0 :precision 0.0)))
 

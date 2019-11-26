@@ -60,5 +60,8 @@
             (java.time.ZoneId/systemDefault))
            (get-formatter date-save-format)))
 
+(defn ldt-to-record-date [ldt]
+  (epoch-to-record-date (get-epoch ldt)))
+
 (defn get-todays-record-date []
   (epoch-to-record-date (get-epoch (java.time.LocalDateTime/now))))

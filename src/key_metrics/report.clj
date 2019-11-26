@@ -26,6 +26,13 @@
 ;; ;=================================== analysis ==================================
 
 
+(defn get-epoch-difference [a b]
+  (- (:epoch a) (:epoch b)))
+
+(defn get-key-hours [day]
+  ;; get the number of work hours per day based on estimated keys per work hour
+  (float (/ (count day) keys-per-hour)))
+
 (defn partition-hour [keys]
   (partition-by :hour  keys))
 
@@ -55,9 +62,6 @@
                                             p (comp-fn dif interval)]
                                         (recur (inc i) (+ c (if p dif 0))))))))))
 
-(defn get-epoch-difference [a b]
-  (- (:epoch a) (:epoch b)))
-
 (defn interval-map [a b]
   {;; :_a (km-utils/epoch-to-hhmm (:epoch a))
    ;; :_b (km-utils/epoch-to-hhmm (:epoch b))
@@ -68,6 +72,7 @@
 
 (defn accumulate-key-intervals [keys interval]
   ;; accumulate the intervals between key events as a series if the difference meets a selected criteria; recent keys are first in the list
+
   (let [intervals  (->> (map interval-map keys (subvec (vec keys) 1))
                         (filter #(> (:dif %) interval)))]
     (println "interval count " (count intervals))
@@ -113,10 +118,24 @@
                  :key-hours (double (get-key-hours keys))}]
     (newline)
     (println "keys length" (count keys))
-    (pp/pprint report)
+    (km-print/print-report report)
     (km-db/add-report-for-day record-date report)))
 
-(defn get-days-reports []
+(defn create-today-report []
+  (create-day-report (km-utils/get-todays-record-date)))
+
+(defn create-week-report [n]
+  (let [dates (->> (java.time.LocalDateTime/now)
+                   (iterate #(.minusDays % 1))
+                   (map #(km-utils/ldt-to-record-date %))
+                   (take n))
+        reports (reverse (km-db/get-reports-for-days dates))]
+    (print (count reports))
+    (map km-print/print-report reports)
+    ;; (km-print/plot-n-days reports :sitting-hours)
+    ))
+
+(defn create-days-reports []
   (let [all  (km-db/get-all-dates)]
     (println "all " (count all))
     (doall (map #(create-day-report %) all))))
@@ -130,9 +149,12 @@
   (km-db/info))
 
 ;; (read-new)
+;; (create-today-report)
+;; (println (create-week-report 5))
+(create-week-report 14)
 ;; (create-day-report "26-11-2019")
 ;; (km-db/info)
 ;; (reset)
-(get-days-reports)
+;; (get-days-reports)
 
 

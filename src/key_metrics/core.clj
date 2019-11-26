@@ -54,11 +54,6 @@
 (defn read-days [data]
   (partition-by #(.getDayOfWeek (:obj (:time %)))  data))
 
-(defn get-epoch-difference [a b]
-  (- (:epoch (:time a))
-     (:epoch (:time b))))
-
-
 ;=================================== analysis ==================================
 
 
@@ -92,9 +87,6 @@
       (let [h (get-in (nth raw-hours i) [:time :hour])]
         (recur (inc i) (assoc v h (inc (nth v h))))))))
 
-(defn get-key-hours [day]
-  ;; get the number of work hours per day based on estimated keys per work hour
-  (float (/ (count day) keys-per-hour)))
 
 (defn get-percent-for-day [d]
   (int (* 100 (/ (count d) keys-per-day))))

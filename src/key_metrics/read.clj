@@ -35,13 +35,3 @@
 
 (import-log)
 
-;; (km-db/info)
-
-
-
-;; (defn clear-logfile []
-;;   (let [pw (clojure.java.io/writer log-path)]
-;;     (.close pw)))
-
-
-;; (clear-logfile)

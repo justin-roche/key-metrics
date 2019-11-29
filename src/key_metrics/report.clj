@@ -50,9 +50,6 @@
                           0
                           (get last-report field))]
 
-        (println "getting intervals for " field)
-        (println "last rep start index" start-index)
-        (println "last rep start count" start-count)
         (km-utils/second-to-hours (loop [i start-index c start-count]
                                     (if (= i (count keys))
                                       c
@@ -63,19 +60,15 @@
                                         (recur (inc i) (+ c (if p dif 0))))))))))
 
 (defn interval-map [a b]
-  {;; :_a (km-utils/epoch-to-hhmm (:epoch a))
-   ;; :_b (km-utils/epoch-to-hhmm (:epoch b))
-   :a (:epoch a)
+  {:a (:epoch a)
    :b (:epoch b)
    :_dif (int (/ (get-epoch-difference b a) 60))
    :dif (get-epoch-difference b a)})
 
 (defn accumulate-key-intervals [keys interval]
   ;; accumulate the intervals between key events as a series if the difference meets a selected criteria; recent keys are first in the list
-
   (let [intervals  (->> (map interval-map keys (subvec (vec keys) 1))
                         (filter #(> (:dif %) interval)))]
-    (println "interval count " (count intervals))
     intervals))
 
 (defn create-hour-totals [keys]
@@ -88,7 +81,6 @@
 ;===================================== main ====================================
 
 (defn get-new-keys [keys last-report]
-  ;; (print (type keys))
   (if (nil? last-report)
     keys
     (subvec keys (:total-keys last-report))))
@@ -116,8 +108,6 @@
                  :typing-hours (double (sum-key-intervals (reverse keys) typing-key-interval < :typing-hours last-report))
                  :break-hours (accumulate-key-intervals (reverse keys) break-interval)
                  :key-hours (double (get-key-hours keys))}]
-    (newline)
-    (println "keys length" (count keys))
     (km-print/print-report report)
     (km-db/add-report-for-day record-date report)))
 
@@ -144,15 +134,11 @@
               :typing-hours-avg (/ (reduce (fn [acc x]
                                              (+  (:typing-hours x) acc)) 0 (vec reports)) n)}]
 
-    ;; (map km-print/print-report reports)
     (pp/pprint week)
-    ;; (km-print/plot-n-days reports :sitting-hours)
-    ;;
     ))
 
 (defn create-days-reports []
   (let [all  (km-db/get-all-dates)]
-    (println "all " (count all))
     (doall (map #(create-day-report %) all))))
 
 (defn reset []
@@ -162,14 +148,4 @@
 (defn read-new []
   (km-read/import-log)
   (km-db/info))
-
-;; (read-new)
-;; (create-today-report)
-;; (println (create-week-report 5))
-;; (create-week-report 8)
-;; (create-day-report "26-11-2019")
-;; (km-db/info)
-;; (reset)
-;; (get-days-reports)
-
 

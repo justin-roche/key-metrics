@@ -15,21 +15,17 @@
 
 (defmacro wcar* [& body] `(car/wcar server1-conn ~@body))
 
-
 ;================================== key events =================================
-
 
 (defn add-new-key-events [new-keys old-keys name]
   ;; if a record (key event sequence) already exists for the day, add only new keys to it; filter out old (potentially duplicated) keys from new keys in case something has gone wrong
-  ;; (println old-keys)
   (let [p  (filter #(> (:epoch %) (:epoch (first old-keys)))  new-keys)
         l  (concat  p old-keys)]
-    (println "adding " (count p))
+    (println "adding " (count p) " keys")
     (wcar* (car/set name l))))
 
 (defn add-new-key-event-seq [new-keys name]
   ;; add totally new key event seqs for an entire day
-  ;; (println "adding new key event sequence for " name)
   (println "adding new event sequence for " name (count new-keys))
   (wcar* (car/set name new-keys)))
 
@@ -45,25 +41,21 @@
         :else (println "skipping: " dbname)))))
 
 (defn update-key-events [days]
-  ;; (print "updating for " (count days) " days")
   (newline)
   (doall (map
           (fn [name]
             (update-key-event-seq (get days name) name)) (keys days))))
 
 (defn get-key-events-for-day [d]
-  (println "getting events for " d)
   (wcar*
    (car/get (str "keys:" d))))
 
-(defn get-all-key-events []
-  (sort #(< (:epoch (first %1)) (:epoch (first %2))) (map (fn [name]
-                                                            (println "getting events for name " name)
-                                                            (wcar*
-                                                             (car/get name))) (wcar*
-                                                                               (car/keys "keys:*")))))
-;=================================== reports ===================================
+(defn get-all-dates []
+  ;; get the list of all record dates for which there are key events
+  (map #(str/replace % #"keys:" "") (wcar*
+                                     (car/keys "keys:*"))))
 
+;=================================== reports ===================================
 
 (defn get-report-for-day [date]
   (wcar*
@@ -77,29 +69,6 @@
   (let [reports (map #(get-report-for-day %) v)]
     reports))
 
-(defn get-report [date]
-  (wcar*
-   (car/get date)))
-
-(defn add-report [report]
-  (wcar*
-   (car/set (:date report) report)
-   (car/get (:date report))))
-
-(defn get-all-dates []
-  ;; get the list of all record dates for which there are key events
-  (map #(str/replace % #"keys:" "") (wcar*
-                                     (car/keys "keys:*"))))
-;============================= db general functions ============================
-
-
-(defn get-keys [pattern]
-  (wcar*
-   (car/keys pattern)))
-
-
-
-
 
 ;=============================== startup/shutdown ==============================
 
@@ -107,14 +76,12 @@
 (defn shutdown-db []
   (let [ex (shell/sh "redis-cli" "shutdown" (str "-a" pass/db-pass))]
     (if (= 0 (:exit ex))
-      (println "exited with 0")
-      (println "no 0"))))
+      (println "exited with 0"))))
 
 (defn start-db []
   (let [ex (shell/sh "redis-server" "/Users/justin/redis.conf")]
     (if (= 0 (:exit ex))
-      (println "exited with 0")
-      (println "no 0"))))
+      (println "exited with 0"))))
 
 (defn clear-db []
   (wcar* (car/flushdb)))
@@ -128,24 +95,23 @@
         counts (map #(count (wcar* (car/get %))) keys)
         t (map (fn [name count]
                  {:name name :count count}) keys counts)]
-    ;; (println "counts" counts)
     (pp/print-table t)))
+
+(defn get-keys [pattern]
+  (wcar*
+   (car/keys pattern)))
+
+;===================================== dump ====================================
 
 (defn get-key-data [k]
   (wcar* (car/get k)))
-
-;===================================== dump ====================================
 
 (defn dump-key-data [k data]
   (with-open [wrtr (clojure.java.io/writer (str dump-path "rm-" k ".json"))]
     (.write wrtr (json/write-str {:key k
                                   :data data}))))
-
 (defn dump-db [keys]
   (let [keys (vec (get-keys keys))]
     (map #(dump-key-data % (get-key-data %)) keys)))
 
-;; (dump-db "*")
-
-;; (clear-db)
 (info)

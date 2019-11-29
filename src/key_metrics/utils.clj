@@ -51,8 +51,6 @@
   (.toEpochSecond (.atZone  (java.time.LocalDateTime/parse d date-read-formatter)
                             (java.time.ZoneId/systemDefault))))
 
-;; read log file into key event lists by day
-
 (defn epoch-to-record-date [d]
   ;; convert epoch seconds to dd-mm-yyyy format
   (.format (java.time.LocalDateTime/ofInstant

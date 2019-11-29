@@ -129,10 +129,25 @@
                    (iterate #(.minusDays % 1))
                    (map #(km-utils/ldt-to-record-date %))
                    (take n))
-        reports (reverse (km-db/get-reports-for-days dates))]
-    (print (count reports))
-    (map km-print/print-report reports)
+        reports (reverse (subvec (vec (km-db/get-reports-for-days dates)) 1))
+        week {;;
+
+              :days (count reports)
+              :perc-keys-avg (double (/ (reduce (fn [acc x]
+                                                  (+  (:perc-keys x) acc)) 0 (vec reports)) n))
+
+              :sitting-hours-avg (/ (reduce (fn [acc x]
+                                              (+  (:sitting-hours x) acc)) 0 (vec reports)) n)
+
+              :sitting-hours-total (reduce (fn [acc x]
+                                             (+  (:sitting-hours x) acc)) 0 (vec reports))
+              :typing-hours-avg (/ (reduce (fn [acc x]
+                                             (+  (:typing-hours x) acc)) 0 (vec reports)) n)}]
+
+    ;; (map km-print/print-report reports)
+    (pp/pprint week)
     ;; (km-print/plot-n-days reports :sitting-hours)
+    ;;
     ))
 
 (defn create-days-reports []
@@ -151,7 +166,7 @@
 ;; (read-new)
 ;; (create-today-report)
 ;; (println (create-week-report 5))
-(create-week-report 14)
+;; (create-week-report 8)
 ;; (create-day-report "26-11-2019")
 ;; (km-db/info)
 ;; (reset)

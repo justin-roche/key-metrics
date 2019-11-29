@@ -26,7 +26,6 @@
   (let [break-hours (:break-hours report)
         table (vec (map
                     (fn [i]
-                  ;; (println "i: " i)
                       {:hour  (:a i)
                        :duration (:_dif i)})
                     break-hours))]
@@ -46,9 +45,3 @@
                     0)) reports)]
     (println "             n days report:")
     (plot/plot xs ys :max-height 10  :x-axis-display-step 5.0 :precision 0.0)))
-
-;; (defn log [& rest]
-;;   (set! *print-length* 10)
-;;   (newline)
-;;   (newline)
-;;   (apply (println s)))

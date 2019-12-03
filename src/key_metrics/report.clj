@@ -2,6 +2,7 @@
 (ns key-metrics.report
   (:require [clojure.string :as str]
             [key-metrics.utils :as km-utils]
+            [taoensso.carmine :as car :refer (wcar)]
             [key-metrics.read :as km-read]
             [key-metrics.print :as km-print]
             [key-metrics.db :as km-db]
@@ -96,9 +97,9 @@
   (println "getting report for " record-date)
   (let  [keys (doall (km-db/get-key-events-for-day record-date))
          day-hours (partition-hour keys)
+         ;; last-report nil
          last-report (km-db/get-report-for-day record-date)
          report {;;
-
                  :date record-date
                  :total-keys (count keys)
                  :perc-keys (get-percent-for-day keys)
@@ -108,6 +109,7 @@
                  :typing-hours (double (sum-key-intervals (reverse keys) typing-key-interval < :typing-hours last-report))
                  :break-hours (accumulate-key-intervals (reverse keys) break-interval)
                  :key-hours (double (get-key-hours keys))}]
+    ;; (println "rep" report)
     (km-print/print-report report)
     (km-db/add-report-for-day record-date report)))
 
@@ -121,22 +123,19 @@
                    (take n))
         reports (reverse (subvec (vec (km-db/get-reports-for-days dates)) 1))
         week {;;
-
               :days (count reports)
               :perc-keys-avg (double (/ (reduce (fn [acc x]
                                                   (+  (:perc-keys x) acc)) 0 (vec reports)) n))
-
               :sitting-hours-avg (/ (reduce (fn [acc x]
                                               (+  (:sitting-hours x) acc)) 0 (vec reports)) n)
-
               :sitting-hours-total (reduce (fn [acc x]
                                              (+  (:sitting-hours x) acc)) 0 (vec reports))
               :typing-hours-avg (/ (reduce (fn [acc x]
                                              (+  (:typing-hours x) acc)) 0 (vec reports)) n)}]
-
     (pp/pprint week)))
 
 (defn create-days-reports []
   (let [all  (km-db/get-all-dates)]
     (doall (map #(create-day-report %) all))))
 
+(create-today-report)

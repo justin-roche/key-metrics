@@ -41,8 +41,7 @@
   (int (* 100 (/ (count d) keys-per-day))))
 
 (defn sum-key-intervals [keys interval comp-fn field last-report]
-  ;; accumulate the interval difference as a running total if the difference meets predicate comp-fn
-
+    ;; accumulate the interval difference as a running total if the difference meets predicate comp-fn. keys are all the keys for the day. If there is a last report with the field being accumulated, only start iterating at an index equal to the total keys of the last report. In the case this runs between db updates, ensure that the result value is higher than original, otherwise return original value.
   (if (= (count keys) 0) 0
       (let [start-index (if (or (nil? last-report) (nil? (get last-report field)))
                           1
@@ -50,15 +49,26 @@
             start-count (if (or (nil? last-report) (nil? (get last-report field)))
                           0
                           (get last-report field))]
-
-        (km-utils/second-to-hours (loop [i start-index c start-count]
-                                    (if (= i (count keys))
-                                      c
-                                      (let [a (nth keys i)
-                                            b (nth keys (dec i))
-                                            dif (get-epoch-difference a b)
-                                            p (comp-fn dif interval)]
-                                        (recur (inc i) (+ c (if p dif 0))))))))))
+        (println "start" start-index)
+        (println "count" start-count)
+        (println "keys l" (count keys))
+        (let [r (km-utils/second-to-hours (loop
+                                           ;; [i 1 c 0]
+                                              [i start-index c (* 60 start-count)]
+                                            (if (= i (count keys))
+                                              (do
+                                                (println "return count" c)
+                                                c)
+                                              (let [a (nth keys i)
+                                                    b (nth keys (dec i))
+                                                    dif (get-epoch-difference a b)
+                                                    p (comp-fn dif interval)]
+                                                (recur (inc i) (+ c (if p dif 0)))))))]
+          (if (<= r start-count)
+            (do
+              (println "returning start, r: " r "start:" start-count)
+              start-count)
+            r)))))
 
 (defn interval-map [a b]
   {:a (:epoch a)
@@ -97,7 +107,6 @@
   (println "getting report for " record-date)
   (let  [keys (doall (km-db/get-key-events-for-day record-date))
          day-hours (partition-hour keys)
-         ;; last-report nil
          last-report (km-db/get-report-for-day record-date)
          report {;;
                  :date record-date
@@ -105,11 +114,10 @@
                  :perc-keys (get-percent-for-day keys)
                  :keys-this-hour (count (first day-hours))
                  :sitting-hours (double (sum-key-intervals (reverse keys) sitting-key-interval < :sitting-hours last-report))
-
                  :typing-hours (double (sum-key-intervals (reverse keys) typing-key-interval < :typing-hours last-report))
                  :break-hours (accumulate-key-intervals (reverse keys) break-interval)
                  :key-hours (double (get-key-hours keys))}]
-    ;; (println "rep" report)
+    ;; (println "last-report" last-report)
     (km-print/print-report report)
     (km-db/add-report-for-day record-date report)))
 

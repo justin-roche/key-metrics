@@ -54,7 +54,7 @@
         (println "keys l" (count keys))
         (let [r (km-utils/second-to-hours (loop
                                            ;; [i 1 c 0]
-                                              [i start-index c (* 60 start-count)]
+                                           [i start-index c (* 60 start-count)]
                                             (if (= i (count keys))
                                               (do
                                                 (println "return count" c)

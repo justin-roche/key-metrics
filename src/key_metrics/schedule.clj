@@ -3,24 +3,34 @@
             [clojurewerkz.quartzite.triggers :as t]
             [clojurewerkz.quartzite.jobs :as j]
             [clojurewerkz.quartzite.jobs :refer [defjob]]
-            [clojurewerkz.quartzite.schedule.simple :refer [schedule with-repeat-count with-interval-in-milliseconds]]))
+            [key-metrics.core :as km-core]
+            [key-metrics.read :as km-read]
+            [key-metrics.db :as km-db]
+            [clojurewerkz.quartzite.schedule.calendar-interval :refer [schedule with-interval-in-seconds]]))
 
-(defjob NoOpJob
-  [ctx]
-  (println "Does nothing"))
+(defjob read-job [ctx]
+  (km-read/import-log)
+  ;; (km-db/info)
+  )
 
-(defn set-schedule
-  [& m]
+(defn unschedule-reads []
+  (let [s   (-> (qs/initialize) qs/start)]
+    (qs/delete-job s (j/key "jobs.read.1"))))
+
+(defn schedule-reads []
   (let [s   (-> (qs/initialize) qs/start)
         job (j/build
-             (j/of-type NoOpJob)
-             (j/with-identity (j/key "jobs.noop.1")))
+             (j/of-type read-job)
+             (j/with-identity (j/key "jobs.read.1")))
         trigger (t/build
                  (t/with-identity (t/key "triggers.1"))
                  (t/start-now)
                  (t/with-schedule (schedule
-                                   (with-repeat-count 10)
-                                   (with-interval-in-milliseconds 1000))))]
+                                   (with-interval-in-seconds 60))))]
     (qs/schedule s job trigger)))
 
-(set-schedule)
+(unschedule-reads)
+(schedule-reads)
+
+;; (km-core/read-new)
+

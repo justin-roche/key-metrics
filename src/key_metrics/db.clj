@@ -32,16 +32,18 @@
 (defn update-key-event-seq [new-keys name]
   ;; add a key event sequence for day (first keys) if it does not exist, otherwise concat to existing value, filtering out keys that are duplicates (ie come before the last element of the existing sequence).
   (let [dbname (str "keys:" name)
-        ;; new-keys (second keys)
         old-keys (wcar* (car/get dbname))]
     (do
       (cond
         (nil? old-keys) (add-new-key-event-seq  new-keys dbname)
         (< (count old-keys) (count new-keys)) (add-new-key-events  new-keys old-keys dbname)
-        :else (println "skipping: " dbname)))))
+        ;; :else
+        ;; (println "skipping: " dbname)
+        ))))
 
 (defn update-key-events [days]
-  (newline)
+;; given a map of record format dates and their key sequences, iterate through and update the key event sequence for the day
+  (println "updating")
   (doall (map
           (fn [name]
             (update-key-event-seq (get days name) name)) (keys days))))
@@ -117,4 +119,4 @@
   (let [keys (vec (get-keys keys))]
     (map #(dump-key-data % (get-key-data %)) keys)))
 
-(info)
+;; (info)

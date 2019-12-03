@@ -29,8 +29,9 @@
   (println "importing...")
   (let [key-records (read-log-lines)
         days (group-by #(km-utils/epoch-to-record-date (:epoch %)) key-records)]
-    (set! *print-length* 50)
+    (println "got log lines.." (count days))
+    ;; (set! *print-length* 50)
     (km-db/update-key-events days)))
 
-(import-log)
+;; (import-log)
 

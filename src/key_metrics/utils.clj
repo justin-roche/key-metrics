@@ -3,7 +3,7 @@
 (defn get-formatter [s]
   (java.time.format.DateTimeFormatter/ofPattern s))
 
-(def date-read-format "E MMM dd HH:mm:ss yyyy")
+(def date-read-format "E MMM d HH:mm:ss yyyy")
 ;; the format for dates in the raw keylog
 
 (def date-save-format "dd-MM-YYYY")

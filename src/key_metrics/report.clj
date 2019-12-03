@@ -1,5 +1,5 @@
 
-(ns key-metrics.core
+(ns key-metrics.report
   (:require [clojure.string :as str]
             [key-metrics.utils :as km-utils]
             [key-metrics.read :as km-read]
@@ -134,18 +134,9 @@
               :typing-hours-avg (/ (reduce (fn [acc x]
                                              (+  (:typing-hours x) acc)) 0 (vec reports)) n)}]
 
-    (pp/pprint week)
-    ))
+    (pp/pprint week)))
 
 (defn create-days-reports []
   (let [all  (km-db/get-all-dates)]
     (doall (map #(create-day-report %) all))))
-
-(defn reset []
-  (km-db/clear-db)
-  (km-read/import-log))
-
-(defn read-new []
-  (km-read/import-log)
-  (km-db/info))
 

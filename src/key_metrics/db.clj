@@ -87,6 +87,11 @@
   (wcar* (car/flushdb)))
 
 ;=================================== logging ===================================
+
+(defn get-keys [pattern]
+  (wcar*
+   (car/keys pattern)))
+
 (defn info []
   (newline)
   (let [all (get-keys "*")
@@ -96,10 +101,6 @@
         t (map (fn [name count]
                  {:name name :count count}) keys counts)]
     (pp/print-table t)))
-
-(defn get-keys [pattern]
-  (wcar*
-   (car/keys pattern)))
 
 ;===================================== dump ====================================
 

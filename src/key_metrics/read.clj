@@ -24,13 +24,17 @@
   (vec (with-open [rdr (clojure.java.io/reader log-path)]
          (doall (reverse (map read-log-line (filter #(> (count %) 0) (line-seq rdr))))))))
 
+(defn clear-logfile []
+  (with-open [w (clojure.java.io/writer  log-path)]
+    (.write w (str ""))))
+
 (defn import-log []
   ;; read the log and group it by days, adding results to db under the key(s): keys:dd-mm-Y
   (println "importing...")
   (let [key-records (read-log-lines)
         days (group-by #(km-utils/epoch-to-record-date (:epoch %)) key-records)]
-    (println "got log lines.." (count days))
-    ;; (set! *print-length* 50)
+    (println "imported log days.." (count days))
+    (clear-logfile)
     (km-db/update-key-events days)))
 
 ;; (import-log)

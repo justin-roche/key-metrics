@@ -1,7 +1,8 @@
 (ns key-metrics.print
   (:require [clojure.pprint :as pp]
             [key-metrics.utils :refer :all]
-            [repl-plot.core :as plot]))
+            [repl-plot.core :as plot]
+            [key-metrics.utils :as km-utils]))
 
 (defn print-report [report]
   (let [table [{:name  "time"
@@ -20,20 +21,21 @@
                 :value (:keys-this-hour report)}
                {:name  "date"
                 :value (:date report)}]]
-    (pp/print-table table)))
+    (pp/print-table table)
+    (println (:hours-breakdown report))))
 
 (defn print-break-report [report]
   (let [break-hours (:break-hours report)
         table (vec (map
                     (fn [i]
-                      {:hour  (:a i)
+                      {:hour  (epoch-to-hhmm (:a i))
                        :duration (:_dif i)})
                     break-hours))]
     (pp/print-table table)))
 
-(defn plot-day [hours]
+(defn plot-day [report]
   (let [xs (mapv float (range 24))
-        ys (mapv float hours)]
+        ys (mapv float (:hours-breakdown report))]
     (plot/plot xs ys :max-height 10  :x-axis-display-step 5.0 :precision 0.0)))
 
 (defn plot-n-days [reports k]

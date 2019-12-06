@@ -49,15 +49,11 @@
             start-count (if (or (nil? last-report) (nil? (get last-report field)))
                           0
                           (get last-report field))]
-        (println "start" start-index)
-        (println "count" start-count)
-        (println "keys l" (count keys))
         (let [r (km-utils/second-to-hours (loop
                                            ;; [i 1 c 0]
                                            [i start-index c (* 60 start-count)]
                                             (if (= i (count keys))
                                               (do
-                                                (println "return count" c)
                                                 c)
                                               (let [a (nth keys i)
                                                     b (nth keys (dec i))
@@ -66,7 +62,6 @@
                                                 (recur (inc i) (+ c (if p dif 0)))))))]
           (if (<= r start-count)
             (do
-              (println "returning start, r: " r "start:" start-count)
               start-count)
             r)))))
 
@@ -96,6 +91,9 @@
     keys
     (subvec keys (:total-keys last-report))))
 
+(defn get-hours-breakdown [day-hours]
+  (map #(count %) day-hours))
+
 (defn get-key-intervals [keys interval]
   ;; accumulate the intervals between key events as a series if the difference meets a selected criteria
   (let [intervals  (->> (map interval-map keys (subvec keys 1))
@@ -111,14 +109,13 @@
          report {;;
                  :date record-date
                  :total-keys (count keys)
+                 :hours-breakdown (get-hours-breakdown day-hours)
                  :perc-keys (get-percent-for-day keys)
                  :keys-this-hour (count (first day-hours))
                  :sitting-hours (double (sum-key-intervals (reverse keys) sitting-key-interval < :sitting-hours last-report))
                  :typing-hours (double (sum-key-intervals (reverse keys) typing-key-interval < :typing-hours last-report))
                  :break-hours (accumulate-key-intervals (reverse keys) break-interval)
                  :key-hours (double (get-key-hours keys))}]
-    ;; (println "last-report" last-report)
-    (km-print/print-report report)
     (km-db/add-report-for-day record-date report)))
 
 (defn create-today-report []
@@ -147,3 +144,7 @@
     (doall (map #(create-day-report %) all))))
 
 (create-today-report)
+(km-print/print-report (km-db/get-report-for-day (km-utils/get-todays-record-date)))
+;; (km-print/print-break-report (km-db/get-report-for-day (km-utils/get-todays-record-date)))
+
+;; (km-print/plot-day (km-db/get-report-for-day (km-utils/get-todays-record-date)))

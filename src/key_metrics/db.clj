@@ -60,12 +60,13 @@
 ;=================================== reports ===================================
 
 (defn get-report-for-day [date]
-  (print  "date to get report: " (type date))
+  ;; get report for a single date, date in record date format
   (let [s (str "report:" date)
         rep  (wcar* (car/get s))]
     rep))
 
 (defn add-report-for-day [date report]
+  ;; add/updated report for a single day
   (wcar*
    (car/set (str "report:" date) report)))
 

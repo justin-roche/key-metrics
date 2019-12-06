@@ -15,6 +15,9 @@
 (defn get-epoch [ldt]
   (.toEpochSecond (.atZone  ldt (java.time.ZoneId/systemDefault))))
 
+(defn get-current-epoch []
+  (get-epoch (java.time.LocalDateTime/now)))
+
 (defn epoch-to-hhmm [epoch]
   (.format (java.time.LocalDateTime/ofInstant
             (java.time.Instant/ofEpochSecond epoch)

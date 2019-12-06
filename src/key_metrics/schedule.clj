@@ -26,7 +26,7 @@
                  (t/with-identity (t/key "triggers.1"))
                  (t/start-now)
                  (t/with-schedule (schedule
-                                   (with-interval-in-seconds 60))))]
+                                   (with-interval-in-seconds 30))))]
     (qs/schedule s job trigger)))
 
 (unschedule-reads)

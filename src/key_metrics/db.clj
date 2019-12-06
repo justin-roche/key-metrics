@@ -17,7 +17,7 @@
 
 ;================================== key events =================================
 
-(defn add-new-key-events [new-keys old-keys name]
+(defn append-new-key-events [new-keys old-keys name]
   ;; if a record (key event sequence) already exists for the day, add only new keys to it; filter out old (potentially duplicated) keys from new keys in case something has gone wrong
   (let [p  (filter #(> (:epoch %) (:epoch (first old-keys)))  new-keys)
         l  (concat  p old-keys)]
@@ -34,16 +34,12 @@
   (let [dbname (str "keys:" name)
         old-keys (wcar* (car/get dbname))]
     (do
-      (cond
-        (nil? old-keys) (add-new-key-event-seq  new-keys dbname)
-        (< (count old-keys) (count new-keys)) (add-new-key-events  new-keys old-keys dbname)
-        ;; :else
-        ;; (println "skipping: " dbname)
-        ))))
+      (if (nil? old-keys)
+        (add-new-key-event-seq new-keys dbname)
+        (append-new-key-events new-keys old-keys dbname)))))
 
 (defn update-key-events [days]
 ;; given a map of record format dates and their key sequences, iterate through and update the key event sequence for the day
-  (println "updating")
   (doall (map
           (fn [name]
             (update-key-event-seq (get days name) name)) (keys days))))
@@ -120,4 +116,4 @@
   (let [keys (vec (get-keys keys))]
     (map #(dump-key-data % (get-key-data %)) keys)))
 
-;; (info)
+(info)

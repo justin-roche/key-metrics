@@ -19,6 +19,8 @@
                 :value (format "%.2f" (:typing-hours report))}
                {:name  "keys this hour "
                 :value (:keys-this-hour report)}
+               {:name  "time since last break "
+                :value (int (/ (:time-since-last-break report) 60))}
                {:name  "date"
                 :value (:date report)}]]
     (pp/print-table table)

@@ -66,13 +66,14 @@
             r)))))
 
 (defn interval-map [a b]
+  ;; create an interval object with a as the early key, b the later key, dif the difference in epoch time, _dif the displayable difference in minutes
   {:a (:epoch a)
    :b (:epoch b)
    :_dif (int (/ (get-epoch-difference b a) 60))
    :dif (get-epoch-difference b a)})
 
 (defn accumulate-key-intervals [keys interval]
-  ;; accumulate the intervals between key events as a series if the difference meets a selected criteria; recent keys are first in the list
+  ;; accumulate the intervals between key events as a series if the difference meets a selected criteria (greater than interval); recent keys are first in the list
   (let [intervals  (->> (map interval-map keys (subvec (vec keys) 1))
                         (filter #(> (:dif %) interval)))]
     intervals))
@@ -100,13 +101,20 @@
                         (filter #(> (:dif %) interval)))]
     intervals))
 
+(defn get-time-since-last-break [last-break]
+  ;; get time since last break in ms
+  (-  (km-utils/get-current-epoch) last-break))
+
 (defn create-day-report [record-date]
 ;; get report for one day in serializable format
   (println "getting report for " record-date)
   (let  [keys (doall (km-db/get-key-events-for-day record-date))
          day-hours (partition-hour keys)
          last-report (km-db/get-report-for-day record-date)
+         breaks-series (accumulate-key-intervals (reverse keys) break-interval)
+         last-break  (:a (last breaks-series))
          report {;;
+                 :time-since-last-break (get-time-since-last-break last-break)
                  :date record-date
                  :total-keys (count keys)
                  :hours-breakdown (get-hours-breakdown day-hours)
@@ -114,7 +122,8 @@
                  :keys-this-hour (count (first day-hours))
                  :sitting-hours (double (sum-key-intervals (reverse keys) sitting-key-interval < :sitting-hours last-report))
                  :typing-hours (double (sum-key-intervals (reverse keys) typing-key-interval < :typing-hours last-report))
-                 :break-hours (accumulate-key-intervals (reverse keys) break-interval)
+                 :break-hours breaks-series
+                 :last-break (km-utils/epoch-to-hhmm last-break)
                  :key-hours (double (get-key-hours keys))}]
     (km-db/add-report-for-day record-date report)))
 

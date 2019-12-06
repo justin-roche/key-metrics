@@ -30,12 +30,10 @@
 
 (defn import-log []
   ;; read the log and group it by days, adding results to db under the key(s): keys:dd-mm-Y
-  (println "importing...")
   (let [key-records (read-log-lines)
         days (group-by #(km-utils/epoch-to-record-date (:epoch %)) key-records)]
-    (println "imported log days.." (count days))
     (clear-logfile)
     (km-db/update-key-events days)))
 
-;; (import-log)
+(import-log)
 

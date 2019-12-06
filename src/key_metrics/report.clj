@@ -21,8 +21,8 @@
 (def break-interval (* 5 60))
 ;; minimum duration of a break; how many seconds should two keys be apart for you to be considered on a break
 
-(def time-between-breaks (* 28 60))
-;; how many seconds should two keys be apart for you to be considered on a break
+(def time-between-breaks (* 30 60))
+;; the maximum time you can go without a break
 
 (def keys-per-day (* keys-per-hour 8))
 
@@ -43,30 +43,41 @@
 (defn get-percent-for-day [d]
   (int (* 100 (/ (count d) keys-per-day))))
 
+(defn iterate-key-intervals [keys start-index  comp-fn interval]
+  (loop
+   ;; [i 1 c 0]
+   [i start-index c 0]
+    (if (= i (count keys))
+      (do
+        (println "c" c)
+        c)
+      (let [a (nth keys i)
+            b (nth keys (dec i))
+            dif (get-epoch-difference a b)
+            p (comp-fn dif interval)]
+        (recur (inc i) (+ c (if p dif 0)))))))
+
 (defn sum-key-intervals [keys interval comp-fn field last-report]
     ;; accumulate the interval difference as a running total if the difference meets predicate comp-fn. keys are all the keys for the day. If there is a last report with the field being accumulated, only start iterating at an index equal to the total keys of the last report. In the case this runs between db updates, ensure that the result value is higher than original, otherwise return original value.
   (if (= (count keys) 0) 0
-      (let [start-index (if (or (nil? last-report) (nil? (get last-report field)))
-                          1
-                          (:total-keys last-report))
-            start-count (if (or (nil? last-report) (nil? (get last-report field)))
-                          0
-                          (get last-report field))]
-        (let [r (km-utils/second-to-hours (loop
-                                           ;; [i 1 c 0]
-                                           [i start-index c (* 60 start-count)]
-                                            (if (= i (count keys))
-                                              (do
-                                                c)
-                                              (let [a (nth keys i)
-                                                    b (nth keys (dec i))
-                                                    dif (get-epoch-difference a b)
-                                                    p (comp-fn dif interval)]
-                                                (recur (inc i) (+ c (if p dif 0)))))))]
-          (if (<= r start-count)
-            (do
-              start-count)
-            r)))))
+      (let [;;
+            ;; no-field (nil? (get last-report field))
+            no-field true
+            start-index (if (or (nil? last-report) no-field) 1
+                            (:total-keys last-report))
+            start-value-hours (if (or (nil? last-report) no-field) 0
+                                  (get last-report field))
+            start-value-seconds (km-utils/hours-to-seconds start-value-hours)
+            additional-seconds  (iterate-key-intervals keys start-index comp-fn interval)
+            total-seconds (+ additional-seconds start-value-seconds)]
+        (println "start value seconds"  start-value-seconds "additional" additional-seconds)
+        (if (<= total-seconds start-value-seconds)
+          (do
+            (println "no change, start value:" start-value-hours)
+            start-value-hours)
+          (do
+            (println "r" (km-utils/second-to-hours total-seconds))
+            (km-utils/second-to-hours total-seconds))))))
 
 (defn interval-map [a b]
   ;; create an interval object with a as the early key, b the later key, dif the difference in epoch time, _dif the displayable difference in minutes
@@ -159,6 +170,6 @@
     (doall (map #(create-day-report %) all))))
 
 (create-today-report)
-(km-print/print-report (km-db/get-report-for-day (km-utils/get-todays-record-date)))
+;; (km-print/print-report (km-db/get-report-for-day (km-utils/get-todays-record-date)))
 ;; (km-print/print-break-report (km-db/get-report-for-day (km-utils/get-todays-record-date)))
 ;; (km-print/plot-day (km-db/get-report-for-day (km-utils/get-todays-record-date)))

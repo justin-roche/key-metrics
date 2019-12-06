@@ -46,6 +46,9 @@
 (defn second-to-hours [s]
   (/ (/ s 60) 60))
 
+(defn hours-to-seconds [h]
+  (* (* h 60) 60))
+
 (defn get-formatter [s]
   (java.time.format.DateTimeFormatter/ofPattern s))
 (def date-read-formatter (get-formatter date-read-format))

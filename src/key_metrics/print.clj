@@ -2,11 +2,14 @@
   (:require [clojure.pprint :as pp]
             [key-metrics.utils :refer :all]
             [repl-plot.core :as plot]
+            [dynne.sampled-sound :refer :all]
             [key-metrics.utils :as km-utils]))
 
 (defn print-report [report]
   (let [table [{:name  "time"
                 :value (.format (java.time.LocalDateTime/now) (get-formatter "hh:mm"))}
+               {:name  "new keys? "
+                :value (:has-new-keys report) :target (:keys-per-day report)}
                {:name  "keys "
                 :value (:total-keys report) :target (:keys-per-day report)}
                {:name  "percentage keys "
@@ -21,10 +24,13 @@
                 :value (:keys-this-hour report)}
                {:name  "time since last break "
                 :value (int (/ (:time-since-last-break report) 60))}
+               {:name  "break due"
+                :value (:break-due report)}
                {:name  "date"
                 :value (:date report)}]]
-    (pp/print-table table)
-    (println (:hours-breakdown report))))
+    (if (and (:break-due report) (:has-new-keys report))
+      (play (sinusoid 5.0 440)))
+    (pp/print-table table)))
 
 (defn print-break-report [report]
   (let [break-hours (:break-hours report)

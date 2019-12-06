@@ -4,6 +4,7 @@
             [clojure.data.json :as json]
             [taoensso.carmine :as car :refer (wcar)]
             [clojure.pprint :as pp]
+            [key-metrics.print :as km-print]
             [key-metrics.utils :as km-utils]
             [clojure.string :as str]))
 
@@ -116,4 +117,4 @@
   (let [keys (vec (get-keys keys))]
     (map #(dump-key-data % (get-key-data %)) keys)))
 
-(info)
+;; (info)

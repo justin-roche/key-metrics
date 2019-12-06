@@ -6,6 +6,7 @@
   :dependencies [[repl-plot "0.1.0-SNAPSHOT"]
                  [com.taoensso/carmine "2.19.1"]
                  [com.taoensso/timbre "4.10.0"]
+                 [org.craigandera/dynne "0.4.1"]
                  [clojurewerkz/quartzite "2.1.0"]
                  [org.clojure/data.json "0.2.7"]
                  [org.clojure/clojure "1.10.0"]]

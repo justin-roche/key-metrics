@@ -19,6 +19,9 @@
 ;; how close (in seconds) should two keys be for you to be considered typing
 
 (def break-interval (* 5 60))
+;; minimum duration of a break; how many seconds should two keys be apart for you to be considered on a break
+
+(def time-between-breaks (* 28 60))
 ;; how many seconds should two keys be apart for you to be considered on a break
 
 (def keys-per-day (* keys-per-hour 8))
@@ -112,18 +115,21 @@
          day-hours (partition-hour keys)
          last-report (km-db/get-report-for-day record-date)
          breaks-series (accumulate-key-intervals (reverse keys) break-interval)
-         last-break  (:a (last breaks-series))
+         last-break  (:b (last breaks-series))
+         time-since-last-break (get-time-since-last-break last-break)
          report {;;
-                 :time-since-last-break (get-time-since-last-break last-break)
                  :date record-date
+                 :last-break (km-utils/epoch-to-hhmm last-break)
+                 :time-since-last-break time-since-last-break
+                 :break-due (> time-since-last-break time-between-breaks)
                  :total-keys (count keys)
+                 :has-new-keys (> (count keys) (:total-keys last-report))
                  :hours-breakdown (get-hours-breakdown day-hours)
                  :perc-keys (get-percent-for-day keys)
                  :keys-this-hour (count (first day-hours))
                  :sitting-hours (double (sum-key-intervals (reverse keys) sitting-key-interval < :sitting-hours last-report))
                  :typing-hours (double (sum-key-intervals (reverse keys) typing-key-interval < :typing-hours last-report))
                  :break-hours breaks-series
-                 :last-break (km-utils/epoch-to-hhmm last-break)
                  :key-hours (double (get-key-hours keys))}]
     (km-db/add-report-for-day record-date report)))
 
@@ -155,5 +161,4 @@
 (create-today-report)
 (km-print/print-report (km-db/get-report-for-day (km-utils/get-todays-record-date)))
 ;; (km-print/print-break-report (km-db/get-report-for-day (km-utils/get-todays-record-date)))
-
 ;; (km-print/plot-day (km-db/get-report-for-day (km-utils/get-todays-record-date)))

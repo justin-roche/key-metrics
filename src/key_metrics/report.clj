@@ -61,8 +61,8 @@
     ;; accumulate the interval difference as a running total if the difference meets predicate comp-fn. keys are all the keys for the day. If there is a last report with the field being accumulated, only start iterating at an index equal to the total keys of the last report. In the case this runs between db updates, ensure that the result value is higher than original, otherwise return original value.
   (if (= (count keys) 0) 0
       (let [;;
-            ;; no-field (nil? (get last-report field))
-            no-field true
+            no-field (nil? (get last-report field))
+            ;; no-field true
             start-index (if (or (nil? last-report) no-field) 1
                             (:total-keys last-report))
             start-value-hours (if (or (nil? last-report) no-field) 0
@@ -117,11 +117,18 @@
 
 (defn get-time-since-last-break [last-break]
   ;; get time since last break in ms
-  (-  (km-utils/get-current-epoch) last-break))
+  (if (nil? last-break)
+    nil
+    (-  (km-utils/get-current-epoch) last-break)))
+
+(defn get-has-new-keys [keys last-report]
+  (println (:total-keys last-report) (count keys))
+  (if (and (> (count keys) 0) (nil? last-report))
+    true
+    (> (count keys) (:total-keys last-report))))
 
 (defn create-day-report [record-date]
 ;; get report for one day in serializable format
-  (println "getting report for " record-date)
   (let  [keys (doall (km-db/get-key-events-for-day record-date))
          day-hours (partition-hour keys)
          last-report (km-db/get-report-for-day record-date)
@@ -129,18 +136,19 @@
          last-break  (:b (last breaks-series))
          time-since-last-break (get-time-since-last-break last-break)
          report {;;
+                 :break-hours breaks-series
+                 :last-break (if (nil? last-break) nil (km-utils/epoch-to-hhmm last-break))
+                 :time-since-last-break (if (nil? last-break) nil time-since-last-break)
+                 :break-due (if (nil? last-break) false (> time-since-last-break time-between-breaks))
+                 ;;
                  :date record-date
-                 :last-break (km-utils/epoch-to-hhmm last-break)
-                 :time-since-last-break time-since-last-break
-                 :break-due (> time-since-last-break time-between-breaks)
                  :total-keys (count keys)
-                 :has-new-keys (> (count keys) (:total-keys last-report))
+                 :has-new-keys (get-has-new-keys keys last-report)
                  :hours-breakdown (get-hours-breakdown day-hours)
                  :perc-keys (get-percent-for-day keys)
                  :keys-this-hour (count (first day-hours))
                  :sitting-hours (double (sum-key-intervals (reverse keys) sitting-key-interval < :sitting-hours last-report))
                  :typing-hours (double (sum-key-intervals (reverse keys) typing-key-interval < :typing-hours last-report))
-                 :break-hours breaks-series
                  :key-hours (double (get-key-hours keys))}]
     (km-db/add-report-for-day record-date report)))
 
@@ -170,6 +178,6 @@
     (doall (map #(create-day-report %) all))))
 
 (create-today-report)
-;; (km-print/print-report (km-db/get-report-for-day (km-utils/get-todays-record-date)))
+(km-print/print-report (km-db/get-report-for-day (km-utils/get-todays-record-date)))
 ;; (km-print/print-break-report (km-db/get-report-for-day (km-utils/get-todays-record-date)))
 ;; (km-print/plot-day (km-db/get-report-for-day (km-utils/get-todays-record-date)))

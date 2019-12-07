@@ -5,7 +5,7 @@ Key Metrics is a Clojure library designed to provide analysis of keylog info pro
 ## Usage
 The keylogger I am using can be found here: [Simple Keylogger](https://simple-keylogger.github.io) 
 
-For Key Metrics to make use of the keylogger's logfile, the source code for the keylogger needs to be updated to add a timestamp for key records. In keylogger.c, add the following: 
+For Key Metrics to make use of the keylogger's logfile, the source code for the keylogger needs to be updated to add a timestamp for key records. For Simple Keylogger, include time.h in the headers and import it, then in keylogger.c, add the following: 
 
 ```c
     time_t rawtime;
@@ -13,11 +13,12 @@ For Key Metrics to make use of the keylogger's logfile, the source code for the 
 
     time ( &rawtime );
     timeinfo = localtime ( &rawtime );
-    /* printf ( "Current local time and date: %s", asctime (timeinfo) ); */
 
     fprintf(logfile, "%s :: ", convertKeyCode(keyCode));
     fprintf(logfile, "%s", asctime(timeinfo));
 ```
+
+Alternatively, build the forked version which already does this: [Simple Keylogger With Timestamps](https://github.com/justin-roche/simple-keylogger).
 
 ## License
 

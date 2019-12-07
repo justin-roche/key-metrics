@@ -3,8 +3,9 @@
 Key Metrics is a Clojure library designed to provide analysis of keylog info provided by your favorite keylogger. It handles pomodoro scheduling, break reminders, provides historical data for visualization of work trends, along with some rudimentary text based charting, and in general helps quantify your life. It is still under development. 
 
 ## Usage
-The keylogger I am using can be found here: 
-[Website](https://simple-keylogger.github.io) - [Keylogger wiki](https://github.com/GiacomoLaw/Keylogger/wiki)
+The keylogger I am using can be found here: [Simple Keylogger](https://simple-keylogger.github.io) 
+
+For Key Metrics to make use of the keylogger's logfile, the source code for the keylogger needs to be updated to add a timestamp for key records. In keylogger.c, add the following: 
 
 ```c
     time_t rawtime;
@@ -16,7 +17,8 @@ The keylogger I am using can be found here:
 
     fprintf(logfile, "%s :: ", convertKeyCode(keyCode));
     fprintf(logfile, "%s", asctime(timeinfo));
-    ```
+```
+
 ## License
 
 Copyright © 2019 FIXME

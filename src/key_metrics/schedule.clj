@@ -15,6 +15,7 @@
 (defjob read-job [ctx]
   (km-read/import-log)
   (km-report/create-today-report)
+  (println "created report")
   (km-print/print-report (km-db/get-report-for-day (km-utils/get-todays-record-date))))
 
 (defn unschedule-reads []

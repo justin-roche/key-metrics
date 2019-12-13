@@ -6,7 +6,9 @@
             [key-metrics.utils :as km-utils]))
 
 (defn print-report [report]
-  (let [table [{:name  "time"
+  (println "rep print " report)
+  (let [time-since-last-break (:time-since-last-break report)
+        table [{:name  "time"
                 :value (.format (java.time.LocalDateTime/now) (get-formatter "hh:mm"))}
                {:name  "new keys? "
                 :value (:has-new-keys report) :target (:keys-per-day report)}
@@ -23,7 +25,7 @@
                {:name  "keys this hour "
                 :value (:keys-this-hour report)}
                {:name  "time since last break "
-                :value (int (/ (:time-since-last-break report) 60))}
+                :value (if (nil? time-since-last-break) nil (int (/ time-since-last-break 60)))}
                {:name  "break due"
                 :value (:break-due report)}
                {:name  "date"
@@ -55,3 +57,8 @@
                     0)) reports)]
     (println "             n days report:")
     (plot/plot xs ys :max-height 10  :x-axis-display-step 5.0 :precision 0.0)))
+
+;; (defn xx! [a]
+;;   (println "called"))
+
+;; (xx! "a")

@@ -46,6 +46,7 @@
             (update-key-event-seq (get days name) name)) (keys days))))
 
 (defn get-key-events-for-day [d]
+  (println "getting events for " d)
   (wcar*
    (car/get (str "keys:" d))))
 
@@ -57,7 +58,9 @@
 ;=================================== reports ===================================
 
 (defn get-report-for-day [date]
+
   ;; get report for a single date, date in record date format
+  (println "getting report for " date)
   (let [s (str "report:" date)
         rep  (wcar* (car/get s))]
     rep))
@@ -117,4 +120,4 @@
   (let [keys (vec (get-keys keys))]
     (map #(dump-key-data % (get-key-data %)) keys)))
 
-;; (info)
+(info)

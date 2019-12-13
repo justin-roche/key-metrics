@@ -122,12 +122,13 @@
     (-  (km-utils/get-current-epoch) last-break)))
 
 (defn get-has-new-keys [keys last-report]
-  (println (:total-keys last-report) (count keys))
+  (println "total keys" (:total-keys last-report) (count keys))
   (if (and (> (count keys) 0) (nil? last-report))
     true
     (> (count keys) (:total-keys last-report))))
 
 (defn create-day-report [record-date]
+  (println "report for " record-date)
 ;; get report for one day in serializable format
   (let  [keys (doall (km-db/get-key-events-for-day record-date))
          day-hours (partition-hour keys)
@@ -140,7 +141,7 @@
                  :last-break (if (nil? last-break) nil (km-utils/epoch-to-hhmm last-break))
                  :time-since-last-break (if (nil? last-break) nil time-since-last-break)
                  :break-due (if (nil? last-break) false (> time-since-last-break time-between-breaks))
-                 ;;
+
                  :date record-date
                  :total-keys (count keys)
                  :has-new-keys (get-has-new-keys keys last-report)

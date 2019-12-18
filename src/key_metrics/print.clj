@@ -34,6 +34,18 @@
       (play (sinusoid 5.0 440)))
     (pp/print-table table)))
 
+(defn print-week-report [report]
+  (println "week report " report)
+  (let [table [{:name  "day count"
+                :value (count report)}
+               {:name  "% keys avg"
+                :value (int  (:perc-keys-avg report))}
+               {:name  "sitting hours avg"
+                :value (format "%.2f" (:sitting-hours-avg report))}
+               {:name  "typing hours avg"
+                :value (format "%.2f" (:typing-hours-avg report))}]]
+    (pp/print-table table)))
+
 (defn print-break-report [report]
   (let [break-hours (:break-hours report)
         table (vec (map

@@ -156,29 +156,43 @@
 (defn create-today-report []
   (create-day-report (km-utils/get-todays-record-date)))
 
+(defn reduce-reports [reports k]
+  (println "count reports" (count reports))
+  ;; (println "0" (nth reports 0))
+  (let [total (reduce (fn [acc x] (+  acc (k x))) 0 (vec reports))
+        avg (/ total (count reports))]
+    avg))
+
 (defn create-week-report [n]
   (let [dates (->> (java.time.LocalDateTime/now)
                    (iterate #(.minusDays % 1))
                    (map #(km-utils/ldt-to-record-date %))
                    (take n))
         reports (reverse (subvec (vec (km-db/get-reports-for-days dates)) 1))
+        f (filter #(not (nil? %)) reports)
         week {;;
               :days (count reports)
-              :perc-keys-avg (double (/ (reduce (fn [acc x]
-                                                  (+  (:perc-keys x) acc)) 0 (vec reports)) n))
-              :sitting-hours-avg (/ (reduce (fn [acc x]
-                                              (+  (:sitting-hours x) acc)) 0 (vec reports)) n)
-              :sitting-hours-total (reduce (fn [acc x]
-                                             (+  (:sitting-hours x) acc)) 0 (vec reports))
-              :typing-hours-avg (/ (reduce (fn [acc x]
-                                             (+  (:typing-hours x) acc)) 0 (vec reports)) n)}]
-    (pp/pprint week)))
+              :perc-keys-avg (reduce-reports f :perc-keys)
+              :total-keys-avg (reduce-reports f :total-keys)
+              :sitting-hours-avg (reduce-reports f :sitting-hours)
+              :typing-hours-avg (reduce-reports f :typing-hours)
+              ;; :sitting-hours-total (reduce-reports f :sitting-hours)
+              ;; :sitting-hours-total (reduce (fn [acc x]
+              ;;                                (+  (:sitting-hours x) acc)) 0 (vec reports))
+              ;; :typing-hours-avg (/ (reduce (fn [acc x]
+                                             ;; (+  (:typing-hours x) acc)) 0 (vec reports)) n)
+              }]
+    ;; (pp/pprint (nth reports 2))
+    ;; (pp/pprint (nth f 0))
+    (pp/pprint week)
+    week))
 
 (defn create-days-reports []
   (let [all  (km-db/get-all-dates)]
     (doall (map #(create-day-report %) all))))
 
-(create-today-report)
-(km-print/print-report (km-db/get-report-for-day (km-utils/get-todays-record-date)))
+;; (create-today-report)
+;; (km-print/print-report (km-db/get-report-for-day (km-utils/get-todays-record-date)))
 ;; (km-print/print-break-report (km-db/get-report-for-day (km-utils/get-todays-record-date)))
 ;; (km-print/plot-day (km-db/get-report-for-day (km-utils/get-todays-record-date)))
+(km-print/print-week-report (create-week-report 7))

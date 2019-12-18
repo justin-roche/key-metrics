@@ -35,5 +35,5 @@
     (clear-logfile)
     (km-db/update-key-events days)))
 
-(import-log)
+;; (import-log)
 

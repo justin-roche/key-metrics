@@ -13,6 +13,7 @@
             [clojurewerkz.quartzite.schedule.calendar-interval :refer [schedule with-interval-in-seconds]]))
 
 (defjob read-job [ctx]
+
   (km-read/import-log)
   (km-report/create-today-report)
   (println "created report")
@@ -36,4 +37,5 @@
 
 (unschedule-reads)
 (schedule-reads)
+
 

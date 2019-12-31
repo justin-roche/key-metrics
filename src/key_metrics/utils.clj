@@ -1,4 +1,6 @@
-(ns key-metrics.utils)
+(ns key-metrics.utils
+  (:require
+   [clojure.java.shell :as shell]))
 
 (defn get-formatter [s]
   (java.time.format.DateTimeFormatter/ofPattern s))
@@ -69,3 +71,15 @@
 
 (defn get-todays-record-date []
   (epoch-to-record-date (get-epoch (java.time.LocalDateTime/now))))
+
+(defn start-keylogger []
+  (let [ex (shell/sh "keylogger")]
+    (if (= 0 (:exit ex))
+      (println "exited with 0"))))
+
+(defn kill-keylogger []
+  (let [ex (shell/sh "killall" "keylogger")]
+    (if (= 0 (:exit ex))
+      (println "exited with 0"))))
+
+;; (kill-keylogger)

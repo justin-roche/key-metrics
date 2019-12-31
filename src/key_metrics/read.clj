@@ -2,6 +2,7 @@
   (:require [clojure.string :as str]
             [key-metrics.db :as km-db]
             [key-metrics.utils :as km-utils]
+            [key-metrics.print :as km-print]
             [clojure.pprint :as pp]))
 
 ;; (def log-path "/Users/justin/test.txt")
@@ -30,8 +31,23 @@
 
 (defn import-log []
   ;; read the log and group it by days, adding results to db under the key(s): keys:dd-mm-Y
-  (let [key-records (read-log-lines)
+  (let [line-records (read-log-lines)
+        has-pulse (> (count line-records) 0)
+        key-records  (filter #(not= (:key %) "PULSE") line-records)
         days (group-by #(km-utils/epoch-to-record-date (:epoch %)) key-records)]
+    (println "line records " (count line-records))
+    (println  "key records " (count key-records))
+    (if (not has-pulse)
+      (do
+        (println "no pulse")
+        (km-print/triple-alert)
+        (println "killing keylogger")
+        (km-utils/kill-keylogger)
+        (Thread/sleep 1000)
+        (println "starting keylogger")
+        (km-utils/start-keylogger)
+        (Thread/sleep 1000)
+        ))
     (clear-logfile)
     (km-db/update-key-events days)))
 

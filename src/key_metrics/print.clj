@@ -30,6 +30,8 @@
                 :value (:break-due report)}
                {:name  "date"
                 :value (:date report)}]]
+
+    (pp/pprint  "made sound")
     (if (and (:break-due report) (:has-new-keys report))
       (play (sinusoid 5.0 440)))
     (pp/print-table table)))
@@ -70,6 +72,12 @@
     (println "             n days report:")
     (plot/plot xs ys :max-height 10  :x-axis-display-step 5.0 :precision 0.0)))
 
+(defn triple-alert []
+  (play (sinusoid 5.0 440))
+  (play (sinusoid 5.0 333))
+  (play (sinusoid 5.0 440)))
+
+(triple-alert)
 ;; (defn xx! [a]
 ;;   (println "called"))
 
